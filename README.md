@@ -120,7 +120,7 @@ The requests_verify_ssl value must be true/false or a path to a SSL cert chain.
 
 Available loglevels are `debug`, `info`, `warn`, `critical`, `error`, `exceptions`.
 The outputs field can take a comma seperated list or single item of file,syslog.
-If you are using syslog, you will need to define the syslog server and socket as shown below.
+If you are using syslog, you will need to define the syslog server and socket as shown below. (The server field can have an alternate port specified in host:port syntax.)
 If you are using file, you will need to define logfile outputs below.
 Multiple outputs can be active at once.
 The logformat can be changed as needed (confirming to python-logging conventions)
