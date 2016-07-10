@@ -113,7 +113,7 @@ The requests_verify_ssl value must be true/false or a path to a SSL cert chain.
 
     config:
       request_timeout: 30
-      request_verify_ssl: true
+          request_verify_ssl: true
 
 ---
 ###  <i class="icon-book"></i>Log level
@@ -136,10 +136,12 @@ The logformat can be changed as needed (confirming to python-logging conventions
         logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 --- 
-### <i class="icon-book"></i>Identity Providers
-If your API or resource requires authentication you're going to want to configure an identity provider.
+### <i class="icon-book"></i>Auth/Identity Providers
+If your API or resource requires authentication you're going to want to configure an identity provider. Identity providers are defined in the main config. The first key name is the alias for the identity provider, then the second key defines the actual requests auth provider to use for your identity. The third set of keys defines the kwargs to pass to that identity provider.
 
-This can be a built-in `requests.auth` provider or an external python module you've written or found to be an auth provider. Here is a configuration covering most implementations of requests authentication modules. 
+This can be a built-in `requests.auth` provider as exemplified below or an external python module you've written or found to be an importable requests auth provider. Here is a configuration covering most implementations of requests authentication modules. 
+
+PRO TIP: If you want to use the same identity provider, you can call it multiple times and only have to use a different aliase, such as the case of exampleCustomProvider. exampleCustomProvider could be duplicated as NEWexampleCustomProvider with the same keys beneath it.
 
     config:
       identity_providers:
