@@ -159,11 +159,12 @@ def check(testSet, configinstance, logger):
     z_host, z_port = get_hostport_tuple(
         defaultport=packaging.const_zabbix_port, hostportstr=config['config']['zabbix']['host'])
 
+    timeout = config['config']['zabbix']['send_timeout']
     # Send metrics to zabbix
     logging.debug(
         "Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
     logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(zbxhost=z_host, zbxport=z_port))
-    event.send_to_zabbix(metrics, z_host, z_port)
+    event.send_to_zabbix(metrics=metrics, zabbix_host=z_host, zabbix_port=z_port, timeout=timeout, logger=logger)
     return 0
 
 

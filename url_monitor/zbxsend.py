@@ -23,7 +23,7 @@ class Metric(object):
         return 'Metric(%r, %r, %r, %r)' % (self.host, self.key, self.value, self.clock)
 
 
-def send_to_zabbix(metrics, zabbix_host='127.0.0.1', zabbix_port=10051, timeout=15):
+def send_to_zabbix(logger, metrics, zabbix_host='127.0.0.1', zabbix_port=10051, timeout=15):
     """
     Send set of metrics to Zabbix server.
     :param metrics:
@@ -81,7 +81,6 @@ def send_to_zabbix(metrics, zabbix_host='127.0.0.1', zabbix_port=10051, timeout=
         return False
     finally:
         zabbix.close()
-
 
 logger = logging.getLogger('zbxsender')
 
