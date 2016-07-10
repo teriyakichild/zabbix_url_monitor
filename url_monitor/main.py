@@ -156,13 +156,14 @@ def check(testSet, configinstance, logger):
                                   metrickey,
                                   element['request_response']))
 
+    z_host, z_port = get_hostport_tuple(
+        defaultport=packaging.const_zabbix_port, hostportstr=config['config']['zabbix']['host'])
+
     # Send metrics to zabbix
     logging.debug(
         "Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
-    logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(zbxhost=config[
-                 'config']['zabbix']['host'], zbxport=config['config']['zabbix']['port']))
-    event.send_to_zabbix(metrics, config['config']['zabbix'][
-        'host'], config['config']['zabbix']['port'])
+    logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(zbxhost=z_host, zbxport=z_port))
+    event.send_to_zabbix(metrics, z_host, z_port)
     return 0
 
 
@@ -176,7 +177,7 @@ def discover(args, configinstance, logger):
     :return:
     """
     configinstance.load_yaml_file(args.config)
-    config = configinstance.load()
+    config=configinstance.load()
 
     if not args.datatype:
         logging.error(
@@ -191,24 +192,24 @@ def discover(args, configinstance, logger):
     discovery_dict['data'] = []
 
     for testSet in config['checks']:
-        checkname = testSet['key']
+        checkname=testSet['key']
 
-        uri = testSet['data']['uri']
+        uri=testSet['data']['uri']
 
         for element in testSet['data']['testElements']:  # For every test element
-            datatypes = element['datatype'].split(',')
+            datatypes=element['datatype'].split(',')
             for datatype in datatypes:  # For each datatype found in testElements
                 if datatype == args.datatype:  # Only add if datatype is interesting
                     # Add more useful properties to the discovery element
-                    element = element.copy()
+                    element=element.copy()
                     element.update(
                         {'datatype': datatype, 'checkname': checkname, 'resource_uri': uri})
 
                     # Apply Zabbix low level discovery formating to key names
                     #  (shift to uppercase)
                     for old_key in element.keys():
-                        new_key = "{#" + old_key.upper() + "}"
-                        element[new_key] = element.pop(old_key)
+                        new_key="{#" + old_key.upper() + "}"
+                        element[new_key]=element.pop(old_key)
 
                     # Add this test element to the discovery dict.
                     logger.debug('Item discovered ' + str(element))
@@ -233,17 +234,17 @@ def main(arguements=None):
     """
     try:
         if arguements is None:  # __name__=__main__
-            arguements = sys.argv[1:]
-            progname = sys.argv[0]
+            arguements=sys.argv[1:]
+            progname=sys.argv[0]
         else:  # module entry
-            arguements = arguements[1:]
-            progname = arguements[0]
+            arguements=arguements[1:]
+            progname=arguements[0]
     except IndexError:
         print(return_epilog() + "\n")
         logging.error("Invalid options. Use --help for more information.")
         sys.exit(1)
 
-    arg_parser = argparse.ArgumentParser(
+    arg_parser=argparse.ArgumentParser(
         prog=progname,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=packaging.description,
@@ -282,7 +283,7 @@ def main(arguements=None):
              + " warn, critical, error, exceptions]")
     args = arg_parser.parse_args(args=arguements)
 
-    configinstance = configuration.ConfigObject()
+    configinstance=configuration.ConfigObject()
     configinstance.load_yaml_file(args.config)
     logger = configinstance.get_logger(args.loglevel)
 
@@ -290,16 +291,16 @@ def main(arguements=None):
     config = configinstance.load()
 
     if args.COMMAND == "check":
-        failed_exits = []
+        failed_exits=[]
         for testSet in config['checks']:
             try:  # Catch all exceptions
                 if args.key != None:
                     if testSet['key'] == args.key:
-                        exit_val = check(testSet, configinstance, logger)
+                        exit_val=check(testSet, configinstance, logger)
                         if exit_val != 0:
                             failed_exits.append(testSet['key'])
                 else:
-                    exit_val = check(testSet, configinstance, logger)
+                    exit_val=check(testSet, configinstance, logger)
 
                     if exit_val != 0:
                         failed_exits.append(testSet['key'])
@@ -315,7 +316,7 @@ def main(arguements=None):
 if __name__ == "__main__":
     # do the UNIX double-fork magic, see Stevens' "Advanced
     # Programming in the UNIX Environment" for details (ISBN 0201563177)
-    pid = os.fork()
+    pid=os.fork()
     if pid > 0:
         # exit first parent
         sys.exit(0)
@@ -326,7 +327,7 @@ if __name__ == "__main__":
     os.umask(0)
 
     # do second fork
-    pid = os.fork()
+    pid=os.fork()
     if pid > 0:
         # exit from second parent, print eventual PID before
         print("Daemon PID %d" % pid)

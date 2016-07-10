@@ -21,8 +21,7 @@ config:
             oauthv1-oauth_token: ''
             oauthv1-token_secet: ''
   zabbix:
-    host: localhost
-    port: 6697
+    host: localhost:10051
     item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
 testSet:
 -  "jobStatsTotals"

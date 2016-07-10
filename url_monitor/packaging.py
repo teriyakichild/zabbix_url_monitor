@@ -59,3 +59,8 @@ software_classified = [
     'Topic :: System :: Networking :: Monitoring',
     'Topic :: System :: Systems Administration ',
 ]
+
+# Internal constants
+# Default assuming networking ports
+const_syslog_port = 514
+const_zabbix_port = 10051

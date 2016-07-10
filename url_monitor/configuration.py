@@ -216,12 +216,8 @@ class ConfigObject(object):
                 raise Exception("KeyError: " + str(err) + str(error))
                 exit(1)
 
-            loghost = self.config['config']['logging']['syslog']['server']
-            # Detect if port uses non defaults.
-            if ":" in loghost:
-                loghost = loghost.split(':')[0], int(loghost.split(':')[1])
-            else:
-                loghost = loghost, 514
+            sysloghost = get_hostport_tuple(defaultport=packaging.const_syslog_port, hostportstr=self.config[
+                                            'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']
             if socktype == "tcp":
@@ -230,7 +226,7 @@ class ConfigObject(object):
                 socktype = socket.SOCK_DGRAM
 
             sysloghandler = logging.handlers.SysLogHandler(
-                address=loghost, socktype=socktype)
+                address=sysloghost, socktype=socktype)
             sysloghandler.setLevel(loglevel)
             self.logger.addHandler(sysloghandler)
             sysloghandler.setFormatter(formatter)
@@ -277,7 +273,6 @@ class ConfigObject(object):
 
         try:
             self.config['config']['request_timeout']
-            self.config['config']['request_verify_ssl']
         except KeyError, err:
             error = "Error: Config missing: {err} required for default timeout settings.".format(
                 err=err)

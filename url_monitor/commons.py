@@ -16,6 +16,20 @@ class AuthException(Exception):
 >>>>>>> Use .format, add timeout features,
 
 
+def get_hostport_tuple(dport, dhost):
+    """ Tool to take a hostport combination 'localhost:22' string
+       and return a tuple ('localhost', 22). If no : seperator
+       is given then assume a default port passed as argv1
+    """
+    # Detect if port is designated
+    if ":" in dhost:
+        host = dhost.split(':')[0]
+        port = int(loghost.split(':')[1])
+        return host, port
+    else:  # Use default port
+        return dhost, dport
+
+
 def string2bool(allegedstring):
     """ Tries to return a boolean from a string input if possible,
         else it just returns the original item, allegedly a string.
