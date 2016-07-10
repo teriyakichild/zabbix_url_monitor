@@ -10,6 +10,7 @@ import packaging
 import logging.handlers
 import commons
 
+
 class ConfigObject(object):
     """ This class makes YAML configuration
     available as python datastructure. """
@@ -214,7 +215,7 @@ class ConfigObject(object):
                 logging.exception(error)
                 exit(1)
             sysloghost = commons.get_hostport_tuple(dport=packaging.const_syslog_port, dhost=self.config[
-                                            'config']['logging']['syslog']['server'])
+                'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']
             if socktype == "tcp":
