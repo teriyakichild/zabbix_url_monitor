@@ -222,11 +222,16 @@ class ConfigObject(object):
             else:
                 socktype = socket.SOCK_DGRAM
 
-            sysloghandler = logging.handlers.SysLogHandler(
-                address=sysloghost, socktype=socktype)
-            sysloghandler.setLevel(loglevel)
-            self.logger.addHandler(sysloghandler)
-            sysloghandler.setFormatter(formatter)
+            try:
+                sysloghandler = logging.handlers.SysLogHandler(
+                    address=sysloghost, socktype=socktype)
+                sysloghandler.setLevel(loglevel)
+                self.logger.addHandler(sysloghandler)
+                sysloghandler.setFormatter(formatter)
+            except socket.error, err:
+                error =  """Syslog error with socket.write() on host {h}:{p} {err}""".format(
+                    err=err, h=sysloghost[0], p=sysloghost[1])
+                logging.exception(error)
 
         logging.basicConfig(level=loglevel)
         self.logger.info("Logger initialized.")
