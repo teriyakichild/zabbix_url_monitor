@@ -275,6 +275,14 @@ class ConfigObject(object):
             self.logger.exception("KeyError: " + str(err) + str(error))
             exit(1)
 
+        try:
+            self.config['config']['request_timeout']
+            self.config['config']['request_verify_ssl']
+        except KeyError, err:
+            error = "Error: Config missing: {err} required for default timeout settings.".format(err=err)
+            self.logger.exception(error)
+            exit(1)
+
         # Ensure identity items exist
         try:
             self.config['config']['identity_providers']

@@ -104,14 +104,36 @@ Running ``$ url_monitor discover`` will tell you which datatypes are available.
 
 <i class="icon-file"></i> Basic Configuration Options
 ------------------
-###  <i class="icon-book"></i>Log level
-Available options are `debug`, `info`, `warn`, `critical`, `error`, `exceptions`.
-This should be set to `exceptions` unless you're testing configuration in `debug`/`info` mode.
 
-Dfault: `exceptions`
+###  <i class="icon-book"></i>Network settings
+
+These define some settings for the requests HTTP library used to power the checks.
+The requests_timeout value must be a decimal/whole value in seconds.
+The requests_verify_ssl value must be true/false or a path to a SSL cert chain.
 
     config:
-      loglevel: exceptions
+      request_timeout: 30
+      request_verify_ssl: true
+
+---
+###  <i class="icon-book"></i>Log level
+
+Available loglevels are `debug`, `info`, `warn`, `critical`, `error`, `exceptions`.
+The outputs field can take a comma seperated list or single item of file,syslog.
+If you are using syslog, you will need to define the syslog server and socket as shown below.
+If you are using file, you will need to define logfile outputs below.
+Multiple outputs can be active at once.
+The logformat can be changed as needed (confirming to python-logging conventions)
+
+    config:
+      logging:
+        level: exceptions
+        outputs: file,syslog
+        logfile: /var/log/url_monitor.log
+        syslog:
+          server: 127.0.0.1
+          socket: udp
+        logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 --- 
 ### <i class="icon-book"></i>Identity Providers
@@ -185,8 +207,10 @@ This can be a built-in `requests.auth` provider or an external python module you
 > **`identity_provider`** is a provider that you have defined in the above **identity provieers** section of this README. **NOTE** You can use `none` as a provider and no authentication will be made for requests.
 > 
 > **`ok_http_code`** is a single value, or a comma delimeted list of http code(s) that are acceptable for this check to work. The check will fail with exception output which can be caught by Zabbix as failing checks. **NOTE** You can use `any` value or in a list and valid codes from RFC 2616 will be included.
-
+>
 > **`response_type`** is always `json` until we add a different module for xml.
+>
+> **`request_verify_ssl`** can be either true/false or a path to a valid SSL cert trust file for validating certificates on checks. This will override the global setting (if present).
 
 #####Test Elements
 
@@ -255,6 +279,7 @@ You could write the following test expressions in your configuration to create Z
 	    response_type: json
 	    identity_provider: none
 	    ok_http_code: 200,204
+      request_verify_ssl: true
 	    testElements:
 	      - key: keyname
 	        jsonvalue: ./api_status/mongo

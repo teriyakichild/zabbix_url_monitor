@@ -57,6 +57,24 @@ def check(testSet, configinstance, logger):
     config = configinstance.load()
     webinstance = commons.WebCaller(logger)
 
+    try: # Grab local requests timeout else defer to main setting
+        tmout =int(testSet['data']['request_timeout']) # in seconds
+    except:
+        tmout = int(config['config']['request_timeout'])
+
+    # SSL validation
+    try: # Use SSL local security (if available)
+        globaldefer = False  # Disable global security lookup
+        vfyssl = commons.string2bool(testSet['data']['request_verify_ssl'])
+    except:
+        globaldefer = True
+
+    try: # Use SSL global local security or default to SECURE
+        if globaldefer:
+            vfyssl = commons.string2bool(config['config']['request_verify_ssl'])
+    except:
+        vfyssl = True
+
     # Make a request and check a resource
     try:
         uri = testSet['data']['uri']
@@ -66,22 +84,23 @@ def check(testSet, configinstance, logger):
                  "check cannot run.").format(err=err, item=testSet['key'])
         raise Exception("KeyError: " + str(err) + str(error))
     try:
-        response = webinstance.run(config, uri, verify=True, expected_http_status=str(
-            testSet['data']['ok_http_code']), identity_provider=testSet['data']['identity_provider'])
-    except KeyError as err:
+        response = webinstance.run(config, uri, verify=vfyssl, expected_http_status=str(
+            testSet['data']['ok_http_code']), identity_provider=testSet['data']['identity_provider'], timeout=tmout)
+    except KeyError, err:
         # We're missing ok code arent we?
-        error = "Error: Missing " + str(err) + " under testSet item " + str(testSet['key']) + "\n" \
-                + "If you don't know `ok_http_code: any` will cover most services."
-        raise Exception("KeyError: " + str(err) + str(error))
+        error =  """KeyError Missing {err}  under testSet item {key} If you don't know `ok_http_code: any` will cover most services.""".format(
+                            err=err, key=str(testSet['key']))
+        logging.exception(error)
+        return 1
     except requests.exceptions.RequestException as e:
-        logging.error("Error: Requests exception " + str(e))
+        logging.exception("requests.exceptions.RequestException: {e}".format(e=e))
         return 1
     except commons.AuthException as err:
         logging.exception("Error logging into the ")
         return 1
 
 
-    metrics = []
+    metrics=[]
     # For each testElement do our path check.
     for element in testSet['data']['testElements']:
         try:
@@ -98,22 +117,20 @@ def check(testSet, configinstance, logger):
         # (string,int,count)
         for datatype in datatypes:
             try:
-                path = commons.omnipath(response.content, testSet[
+                path=commons.omnipath(response.content, testSet[
                     'data']['response_type'], element)
             except KeyError as err:
                 # We're missing one of these two keys aren't we?
-                logging.error("Error: Missing " + str(err) +
-                              " in config under testElement, check cannot run.")
-                logging.error("This must be response_type: json.")
+                logging.exception("KeyError {err} missing in config under testElement, check cannot run. Must be response_type json or xml".format(err=err))
                 return 1
             # Append to the element things like response, statuscode,
             # and the request url, I'd like to monitor status codes but don't
             # know what that'll take.
 
-            element['datatype'] = datatype
-            element['request_response'] = path
-            element['request_statuscode'] = response.status_code
-            element['uri'] = uri
+            element['datatype']=datatype
+            element['request_response']=path
+            element['request_statuscode']=response.status_code
+            element['uri']=uri
 
             try:
                 element['key']
@@ -129,7 +146,7 @@ def check(testSet, configinstance, logger):
             # Applies a key format from the configuration file, allowing custom zabbix keys
             # for your items reporting to zabbix. Any element in testSet can be substituted,
             #  the {uri} and Pdatatype} are also made available.
-            metrickey = config['config']['zabbix'][
+            metrickey=config['config']['zabbix'][
                 'item_key_format'].format(**element)
 
             metrics.append(Metric('url_monitor',
@@ -137,9 +154,9 @@ def check(testSet, configinstance, logger):
                                   element['request_response']))
 
     # Send metrics to zabbix
-    logging.info('Preparing to send metrics: ' + str(metrics))
-    logging.debug('Zabbix host ' +
-                  str(config['config']['zabbix']['host']) + ' port ' + str(config['config']['zabbix']['port']))
+    logging.debug("Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
+    logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(zbxhost=config[
+                 'config']['zabbix']['host'], zbxport=config['config']['zabbix']['port']))
     event.send_to_zabbix(metrics, config['config']['zabbix'][
         'host'], config['config']['zabbix']['port'])
     return 0
@@ -155,7 +172,7 @@ def discover(args, configinstance, logger):
     :return:
     """
     configinstance.load_yaml_file(args.config)
-    config = configinstance.load()
+    config=configinstance.load()
 
     if not args.datatype:
         logging.error(
@@ -170,24 +187,24 @@ def discover(args, configinstance, logger):
     discovery_dict['data'] = []
 
     for testSet in config['checks']:
-        checkname = testSet['key']
+        checkname=testSet['key']
 
-        uri = testSet['data']['uri']
+        uri=testSet['data']['uri']
 
         for element in testSet['data']['testElements']:  # For every test element
-            datatypes = element['datatype'].split(',')
+            datatypes=element['datatype'].split(',')
             for datatype in datatypes:  # For each datatype found in testElements
                 if datatype == args.datatype:  # Only add if datatype is interesting
                     # Add more useful properties to the discovery element
-                    element = element.copy()
+                    element=element.copy()
                     element.update(
                         {'datatype': datatype, 'checkname': checkname, 'resource_uri': uri})
 
                     # Apply Zabbix low level discovery formating to key names
                     #  (shift to uppercase)
                     for old_key in element.keys():
-                        new_key = "{#" + old_key.upper() + "}"
-                        element[new_key] = element.pop(old_key)
+                        new_key="{#" + old_key.upper() + "}"
+                        element[new_key]=element.pop(old_key)
 
                     # Add this test element to the discovery dict.
                     logger.debug('Item discovered ' + str(element))
@@ -212,17 +229,17 @@ def main(arguements=None):
     """
     try:
         if arguements is None:  # __name__=__main__
-            arguements = sys.argv[1:]
-            progname = sys.argv[0]
+            arguements=sys.argv[1:]
+            progname=sys.argv[0]
         else:  # module entry
-            arguements = arguements[1:]
-            progname = arguements[0]
+            arguements=arguements[1:]
+            progname=arguements[0]
     except IndexError:
         print(return_epilog() + "\n")
         logging.error("Invalid options. Use --help for more information.")
         sys.exit(1)
 
-    arg_parser = argparse.ArgumentParser(
+    arg_parser=argparse.ArgumentParser(
         prog=progname,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=packaging.description,
@@ -261,7 +278,7 @@ def main(arguements=None):
              + " warn, critical, error, exceptions]")
     args = arg_parser.parse_args(args=arguements)
 
-    configinstance = configuration.ConfigObject()
+    configinstance=configuration.ConfigObject()
     configinstance.load_yaml_file(args.config)
     logger = configinstance.get_logger(args.loglevel)
 
@@ -269,16 +286,16 @@ def main(arguements=None):
     config = configinstance.load()
 
     if args.COMMAND == "check":
-        failed_exits = []
+        failed_exits=[]
         for testSet in config['checks']:
             try:  # Catch all exceptions
                 if args.key != None:
                     if testSet['key'] == args.key:
-                        exit_val = check(testSet, configinstance, logger)
+                        exit_val=check(testSet, configinstance, logger)
                         if exit_val != 0:
                             failed_exits.append(testSet['key'])
                 else:
-                    exit_val = check(testSet, configinstance, logger)
+                    exit_val=check(testSet, configinstance, logger)
 
                     if exit_val != 0:
                         failed_exits.append(testSet['key'])
@@ -294,7 +311,7 @@ def main(arguements=None):
 if __name__ == "__main__":
     # do the UNIX double-fork magic, see Stevens' "Advanced
     # Programming in the UNIX Environment" for details (ISBN 0201563177)
-    pid = os.fork()
+    pid=os.fork()
     if pid > 0:
         # exit first parent
         sys.exit(0)
@@ -305,7 +322,7 @@ if __name__ == "__main__":
     os.umask(0)
 
     # do second fork
-    pid = os.fork()
+    pid=os.fork()
     if pid > 0:
         # exit from second parent, print eventual PID before
         print("Daemon PID %d" % pid)
