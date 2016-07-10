@@ -7,7 +7,8 @@ import socket
 import yaml
 
 import packaging
-
+import logging.handlers
+import commons
 
 class ConfigObject(object):
     """ This class makes YAML configuration
@@ -212,7 +213,7 @@ class ConfigObject(object):
                     err=err)
                 logging.exception(error)
                 exit(1)
-            sysloghost = get_hostport_tuple(defaultport=packaging.const_syslog_port, hostportstr=self.config[
+            sysloghost = commons.get_hostport_tuple(dport=packaging.const_syslog_port, dhost=self.config[
                                             'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']

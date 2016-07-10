@@ -24,7 +24,7 @@ def get_hostport_tuple(dport, dhost):
     # Detect if port is designated
     if ":" in dhost:
         host = dhost.split(':')[0]
-        port = int(loghost.split(':')[1])
+        port = int(dhost.split(':')[1])
         return host, port
     else:  # Use default port
         return dhost, dport
