@@ -279,7 +279,8 @@ class ConfigObject(object):
             self.config['config']['request_timeout']
             self.config['config']['request_verify_ssl']
         except KeyError, err:
-            error = "Error: Config missing: {err} required for default timeout settings.".format(err=err)
+            error = "Error: Config missing: {err} required for default timeout settings.".format(
+                err=err)
             self.logger.exception(error)
             exit(1)
 

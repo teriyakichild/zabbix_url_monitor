@@ -15,6 +15,7 @@ class AuthException(Exception):
 =======
 >>>>>>> Use .format, add timeout features,
 
+
 def string2bool(allegedstring):
     """ Tries to return a boolean from a string input if possible,
         else it just returns the original item, allegedly a string.
@@ -25,10 +26,11 @@ def string2bool(allegedstring):
         return False
     elif allegedstring == "1":
         return True
-    elif  allegedstring == "0":
+    elif allegedstring == "0":
         return False
     else:
         return allegedstring
+
 
 def omnipath(data_object, type, element, throw_error_or_mark_none='none'):
     """
