@@ -10,6 +10,7 @@ try:
 except:
     import simplejson as json
 
+
 class Metric(object):
     def __init__(self, host, key, value, clock=None):
         self.host = host

@@ -12,8 +12,11 @@ import commons
 
 
 class ConfigObject(object):
-    """ This class makes YAML configuration
-    available as python datastructure. """
+    """
+    This class makes YAML configuration
+    available as python datastructure and
+    as a handy reference in other modules.
+    """
 
     def __init__(self):
         self.config = None
@@ -21,9 +24,10 @@ class ConfigObject(object):
 
     def load_yaml_file(self, config=None):
         """
+        This loads the YAML as a dict and returns the object.
 
-        :param config:
-        :return:
+        :param config:    Path to a yaml file
+        :return:          yaml config <dict>
         """
         if config == None:
             config = "/etc/url_monitor.yaml"
@@ -36,16 +40,25 @@ class ConfigObject(object):
                 print(exc)
 
     def load(self):
-        """ This is the main config load function to pull in
-            configurations to convienent and common namespace. """
+        """
+        This is the main config load function to pull in
+        configurations to convienent and common namespace.
+
+        :return:        <dict>
+        """
         return {'checks': self._load_checks(),
                 'config': self._load_config(),
                 'identity_providers': self._load_config_identity_providers()}
 
     def _load_checks(self, withIdentityProvider=None):
-        """ Loads the checks for work to be run.
-            Default loads all checks, withIdentityProvider option will limit checks
-            returned by identity provider (useful for smart async request grouping)  """
+        """ 
+        Loads the checks for work to be run.
+        Default loads all checks, withIdentityProvider option will limit checks
+        returned by identity provider (useful for smart async request grouping)
+
+        :param withIdentityProvider:   Filters checks by a particular identity provider
+        :return:        checks <dict>
+        """
         loaded_checks = []
 
         if withIdentityProvider:
@@ -62,11 +75,19 @@ class ConfigObject(object):
         return loaded_checks
 
     def _load_config(self):
-        """ Return base config key """
+        """
+        Return base config key. Returns the config: substructure.
+
+        :return:         <dict>
+        """
         return self.config['config']
 
     def _load_config_identity_providers(self):
-        """ This fetches out a list of identity providers kwarg configs from main config """
+        """
+        This fetches out a list of identity providers kwarg configs from main config
+
+        :return:         <dict>
+        """
         providers = {}
         for provider_config_alias, v in self._load_config()['identity_providers'].iteritems():
             # Add each provider and config to dictionary from yaml file.
@@ -77,14 +98,23 @@ class ConfigObject(object):
         """ Loads a list of the checks """
 
     def _uniq(self, seq):
-        """ Returns a unique list when a list of
-         non unique items are put in """
+        """ 
+        Returns a unique list when a list of
+        non unique items are put in.
+
+
+        :return:         <list>
+         """
         set = {}
         map(set.__setitem__, seq, [])
         return set.keys()
 
     def get_datatypes_list(self):
-        """ Used by the discover command to identify a list of valid datatypes """
+        """
+        Used by the discover command to identify a list of valid datatypes
+
+        :return:         <list>
+        """
         exception_string = (
             "Error: Missing {error} under testSet item {test_set}, "
             "discover cannot run."
@@ -126,7 +156,12 @@ class ConfigObject(object):
         return str(self._uniq(possible_datatypes))
 
     def get_log_level(self, debug_level=None):
-        """ Allow user-configurable log-leveling """
+        """
+        Allow user-configurable log-leveling
+
+        :param debug_level:    String level err*,crit*,warn*,info*,debu*
+        :return:               logging.LOG_LEVEL <logging.OBJECT>
+        """
         try:
             if debug_level == None:
                 debug_level = self.config['config']['logging']['level']
@@ -149,28 +184,33 @@ class ConfigObject(object):
             return logging.ERROR
 
     def get_logger(self, loglevel):
-        """ Returns a logger instance, used throughout codebase.
-            This will set up a logger using syslog or file logging (or both)
-            depending on the setting used in configuration.
+        """
+        Returns a logger instance, used throughout codebase.
+        This will set up a logger using syslog or file logging (or both)
+        depending on the setting used in configuration.
 
-            This supports two types of logging options
-            One by file:
-              logging:
-                level: debug
-                outputs: file
-                logfile: /var/log/url_monitor.log
-                logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        This supports two types of logging options
+        One by file:
+          logging:
+            level: debug
+            outputs: file
+            logfile: /var/log/url_monitor.log
+            logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-            One by syslog:
-              logging:
-                level: debug
-                outputs: syslog
-                syslog:
-                    server: 127.0.0.1:514
-                    socket: tcp
-                logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        One by syslog:
+          logging:
+            level: debug
+            outputs: syslog
+            syslog:
+                server: 127.0.0.1:514
+                socket: tcp
+            logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-            You can also enable both by setting outputs with commas.
+        You can also enable both by setting outputs with commas.
+
+
+        :param loglevel:    String level err*,crit*,warn*,info*,debu*
+        :return:            logger <logger.OBJECT>
         """
         try:  # Basic config lint
             self.config['config']['logging']['outputs']
@@ -239,13 +279,16 @@ class ConfigObject(object):
         return self.logger
 
     def pre_flight_check(self):
-        """ Trys loading all the config objects for zabbix conf. This can be expanded to do
-            all syntax checking in this config class, instead of in the program logic as it is
-            mostly right now.
+        """ 
+        Trys loading all the config objects for zabbix conf. This can be expanded to do
+        all syntax checking in this config class, instead of in the program logic as it is
+        mostly right now.
 
-            It is a check class. This should NOT be used for program references.
-            (Doesnt use logger for exceptions as it pre-dates logger instanciation.)
-            """
+        It is a check class. This should NOT be used for program references.
+        (Doesnt use logger for exceptions as it pre-dates logger instanciation.)
+
+        :return:            none <noneType>
+        """
         # Ensure base config elements exist.
         try:
             self.config['config']
@@ -309,9 +352,12 @@ class ConfigObject(object):
         self.logger.info("Pre-flight config test OK")
 
     def _load_test_set_list(self):
-        """ Used to prepare format of data for the checker functions
+        """
+        Used to prepare format of data for the checker functions
         out of the configuration file.
         Here is a sample of return output.
+
+        :return: <LIST>
         [{
             "elements": [
                 {
@@ -335,7 +381,8 @@ class ConfigObject(object):
             ],
             "response_type": "json",
             "url": "https://x.net/dependencies"
-        }]"""
+        }]
+        """
         self.checks = []
         for testSet in self.config['testSet']:
             for key, v in testSet.iteritems():

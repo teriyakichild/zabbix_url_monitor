@@ -163,8 +163,9 @@ def check(testSet, configinstance, logger):
     # Send metrics to zabbix
     logging.debug(
         "Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
-    logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(
-        zbxhost=z_host, zbxport=z_port))
+    logging.info(
+        "Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(zbxhost=z_host,
+                                                                  zbxport=z_port))
     event.send_to_zabbix(metrics=metrics, zabbix_host=z_host,
                          zabbix_port=z_port, timeout=timeout, logger=logger)
     return 0
@@ -257,23 +258,29 @@ def main(arguements=None):
         "-V",
         "--version",
         action='version',
-        version='{0} {1}'.format(packaging.project, packaging.version))
+        version=('{0} {1}'.format(packaging.project, packaging.version))
+    )
     arg_parser.add_argument(
         "--key",
         "-k",
         nargs='?',
         default=None,
-        help="Optional with `check` command. Can be used to run checks on a limited"
-             + " subset of item headings under testSet from the yaml config."
+        help=(
+            "Optional with `check` command. Can be used to run checks on a limited"
+            " subset of item headings under testSet from the yaml config."
+        )
     )
     arg_parser.add_argument(
         "--datatype",
         "-t",
         nargs='?',
         default=None,
-        help="Required with `discover` command. This filters objects from the config "
-             + "that have a particular datatype. This data is used by low level discovery"
-             + " in Zabbix.")
+        help=(
+            "Required with `discover` command. This filters objects from the config "
+            "that have a particular datatype. This data is used by low level discovery"
+            " in Zabbix."
+        )
+    )
     arg_parser.add_argument(
         "-c",
         "--config",
@@ -282,8 +289,11 @@ def main(arguements=None):
     arg_parser.add_argument(
         "--loglevel",
         default=None,
-        help="Specify custom loglevel override. Available options [debug, info,"
-             + " warn, critical, error, exceptions]")
+        help=(
+            "Specify custom loglevel override. Available options [debug, info,"
+            " warn, critical, error, exceptions]"
+        )
+    )
     args = arg_parser.parse_args(args=arguements)
 
     configinstance = configuration.ConfigObject()

@@ -4,7 +4,12 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
 from requests_oauthlib import OAuth1
-<<<<<<< HEAD
+import packaging
+from jpath import jpath
+
+
+class AuthException(Exception):
+    pass
 
 import packaging
 from jpath import jpath
@@ -12,14 +17,16 @@ from jpath import jpath
 
 class AuthException(Exception):
     pass
-=======
->>>>>>> Use .format, add timeout features,
-
 
 def get_hostport_tuple(dport, dhost):
-    """ Tool to take a hostport combination 'localhost:22' string
-       and return a tuple ('localhost', 22). If no : seperator
-       is given then assume a default port passed as argv1
+    """
+    Tool to take a hostport combination 'localhost:22' string
+    and return a tuple ('localhost', 22). If no : seperator
+    is given then assume a default port passed as argv1
+
+    :param dport:   A default port to insert into the tuple if not parsable.
+    :param dhost:   A host to split ':' on and try to break into a tuple.
+    :return:        (hostname,port) <tuple>
     """
     # Detect if port is designated
     if ":" in dhost:
@@ -31,8 +38,12 @@ def get_hostport_tuple(dport, dhost):
 
 
 def string2bool(allegedstring):
-    """ Tries to return a boolean from a string input if possible,
-        else it just returns the original item, allegedly a string.
+    """
+    Tries to return a boolean from a string input if possible,
+    else it just returns the original item, allegedly a string.
+
+    :param allegedstring:   String you are checking
+    :return:                the mostly a boolean object
     """
     if allegedstring.lower().startswith('t'):
         return True
@@ -73,14 +84,19 @@ def omnipath(data_object, type, element, throw_error_or_mark_none='none'):
 
 
 class WebCaller(object):
-    """ Performs web functions for API's we're running check"s on """
+    """
+    Performs web functions for API's we're running check"s on
+    """
 
     def __init__(self, logging):
-        """ Initialize web instance.
+        """
+        Initialize web instance.
         Bring logging instance in.
         Set session.auth and session_headers to none by default
+
+        :param logging:              Takes the logger object.
         """
-        self.logging = logging
+        self.logging = logging  # Make instanciation argv local scope
 
         self.session = None
         self.session_headers = None
@@ -88,19 +104,21 @@ class WebCaller(object):
     def auth(self, config, identity_provider):
         """
         Start a requests session with this instance.
-        This is also where we apply authentication schemes.
-        :param config:
-        :param identity_provider:
-        :return:
+        This is where we apply authentication schemes.
+        If you pass in 'none' or another builtin that is applied.
+
+        :param config:              Focus config into scope
+        :param identity_provider:   This is the identity provider key
+        :return:                    none <nonetype>
         """
         identity_providers = config['identity_providers']
         try:
             identity_provider = identity_providers[identity_provider]
             auth_kwargs = identity_provider.values()[0]
-        except KeyError, err:
-            error =  """KeyError {err} defined in testSet as identity_provider
-            but is undeclared in identity_providers!""".format(err=err)
-            self.logging.exception(error)
+        except KeyError as err:
+            error = str(err) + " defined in testSet as identity_provider but is undeclared in identity_providers!"
+            self.logging.exception("KeyError: " + str(err) + str(error))
+            raise AuthException(error)
 
         # If provider is undefined, we get TypeError
         try:
@@ -133,10 +151,12 @@ class WebCaller(object):
             try:
                 module_strname = [x for x in identity_provider][0].split('/')[0]
                 class_strname = [x for x in identity_provider][0].split('/')[1]
-            except IndexError, err:
-                error =  """IndexError {err} {provider_name} is incomplete missing '/' char to seperate Module_Name from Class_Namebut is undeclared in identity_providers!""".format(
-                    err=err, provider_name=provider_name)
-                self.logging.exception(error)
+            except IndexError as err:
+                error = ("{provider}` is incomplete missing '/' char to "
+                         "seperate Module_Name from Class_Name").format(
+                    provider=provider_name
+                )
+                self.logging.exception("IndexError: " + str(err) + str(error))
 
             # Try to import the specified module
             try:
@@ -172,12 +192,13 @@ class WebCaller(object):
         """
         Executes a http request to gather the data.
         expected_http_status can be a list of expected codes.
-        :param config:
-        :param url:
-        :param verify:
-        :param expected_http_status:
-        :param identity_provider:
-        :return:
+        :param config:               Focus config into scope
+        :param url:                  URI/URL resource
+        :param verify:               SSL verify true/false or path to certfile
+        :param expected_http_status: A string that is comma seperated of http codes
+        :param identity_provider:    This is passed in for 
+        :param timeout:              Timeout in seconds to send to requests lib
+        :return:                     request <object>
         """
 
         self.auth(config, identity_provider)
