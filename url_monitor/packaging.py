@@ -13,17 +13,22 @@ package = 'url_monitor'
 project = "URL Monitor Module"
 project_no_spaces = project.replace(' ', '')
 version = '0.8.9'
-description         = 'A zabbix plugin to perform URL endpoint monitoring for JSON and XML REST APIs,' \
-                      + ' supporting multiple http auth mechinisms'
-long_description    = 'A Zabbix plugin written in Python that creates low level discovery items containing ' \
-                      + 'values from your JSON API. It supports multiple requests auth backends including ' \
-                      + 'oauth, basicauth, and your even own custom requests auth provider plugins. The low' \
-                      + ' level discovery items can generate item prototypes which can be used to represent' \
-                      + ' your data through this plugin.'
-authors = ['Jon Kelley', 'Nick Bales']
+description = (
+    'A zabbix plugin to perform URL endpoint monitoring for JSON and XML REST '
+    'APIs, supporting multiple http auth mechinisms'
+)
+long_description = (
+    'A Zabbix plugin written in Python that creates low level discovery items '
+    'containing values from your JSON API. It supports multiple requests auth '
+    'backends including oauth, basicauth, and your even own custom requests '
+    'auth provider plugins. The low level discovery items can generate item '
+    'prototypes which can be used to represent your data through this plugin.'
+)
+authors = ['Jon Kelley', 'Nick Bales', 'Landon Jurgens']
 authors_string = ', '.join(authors)
 emails = ['jon.kelley@rackspace.com',
-          'nick.bales@rackspace.com']
+          'nick.bales@rackspace.com',
+          'landon.jurgens@rackspace.com']
 license = 'ASLv2'
 company = "Rackspace, Inc."
 copyright = '2016 ' + company
