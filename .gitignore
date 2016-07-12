@@ -4,6 +4,9 @@
 .pydevproject
 .settings
 
+# Pycharm Files
+.idea
+
 # pyenv version file
 .python-version
 

@@ -6,6 +6,7 @@ from pytest import raises
 #     from pytest.mark import parametrize
 #
 import pytest
+
 parametrize = pytest.mark.parametrize
 
 from url_monitor import metadata

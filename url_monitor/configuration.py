@@ -1,10 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import yaml
 import logging
-import socket
-import packaging
 import logging.handlers
+import socket
+
+import yaml
+
+import packaging
 
 
 class ConfigObject(object):
@@ -15,7 +17,12 @@ class ConfigObject(object):
         self.config = None
         self.checks = None
 
-    def load_yaml_file(self, config):
+    def load_yaml_file(self, config=None):
+        """
+
+        :param config:
+        :return:
+        """
         if config == None:
             config = "/etc/url_monitor.yaml"
 
@@ -29,11 +36,11 @@ class ConfigObject(object):
     def load(self):
         """ This is the main config load function to pull in
             configurations to convienent and common namespace. """
-        return {'checks':             self._loadChecks(),
-                'config':             self._loadConfig(),
-                'identity_providers': self._loadConfigIdentityProviders()}
+        return {'checks': self._load_checks(),
+                'config': self._load_config(),
+                'identity_providers': self._load_config_identity_providers()}
 
-    def _loadChecks(self, withIdentityProvider=None):
+    def _load_checks(self, withIdentityProvider=None):
         """ Loads the checks for work to be run.
             Default loads all checks, withIdentityProvider option will limit checks
             returned by identity provider (useful for smart async request grouping)  """
@@ -42,24 +49,24 @@ class ConfigObject(object):
         if withIdentityProvider:
             # Useful if doing grouping async requests with a shared identityprovider
             #  and then spawning async call
-            for checkdata in self._loadTestSetList():
+            for checkdata in self._load_test_set_list():
                 if checkdata['data']['identity_provider'].lower() == withIdentityProvider.lower():
-                    #loaded_checks.append({'data': checkdata['data']})
+                    # loaded_checks.append({'data': checkdata['data']})
                     loaded_checks.append(checkdata)
 
         else:
-            loaded_checks = self._loadTestSetList()
+            loaded_checks = self._load_test_set_list()
 
         return loaded_checks
 
-    def _loadConfig(self):
+    def _load_config(self):
         """ Return base config key """
         return self.config['config']
 
-    def _loadConfigIdentityProviders(self):
+    def _load_config_identity_providers(self):
         """ This fetches out a list of identity providers kwarg configs from main config """
         providers = {}
-        for provider_config_alias, v in self._loadConfig()['identity_providers'].iteritems():
+        for provider_config_alias, v in self._load_config()['identity_providers'].iteritems():
             # Add each provider and config to dictionary from yaml file.
             providers[provider_config_alias] = v
         # Return a list of the config
@@ -74,46 +81,54 @@ class ConfigObject(object):
         map(set.__setitem__, seq, [])
         return set.keys()
 
-    def getDatatypesList(self):
+    def get_datatypes_list(self):
         """ Used by the discover command to identify a list of valid datatypes """
+        exception_string = (
+            "Error: Missing {error} under testSet item {test_set}, "
+            "discover cannot run."
+        )
+
         possible_datatypes = []
-        for testSet in self._loadChecks():
+        for testSet in self._load_checks():
             checkname = testSet['key']
             try:
                 uri = testSet['data']['uri']
-            except KeyError, err:
-                error = "Error: Missing " + \
-                    str(err) + " under testSet item " + \
-                    str(testSet['key']) + ", discover cannot run."
+            except KeyError as err:
+                error = exception_string.format(
+                    error=err,
+                    test_set=testSet['key']
+                )
                 raise Exception("KeyError: " + str(err) + str(error))
 
             try:
                 testSet['data']['testElements']
-            except KeyError, err:
-                error = "Error: Missing " + \
-                    str(err) + " under testSet item " + \
-                    str(testSet['key']) + ", discover cannot run."
+            except KeyError as err:
+                error = exception_string.format(
+                    error=err,
+                    test_set=testSet['key']
+                )
                 raise Exception("KeyError: " + str(err) + str(error))
 
             for element in testSet['data']['testElements']:  # For every test element
                 try:
                     datatypes = element['datatype'].split(',')
-                except KeyError, err:
-                    error = "Error: Missing " + \
-                        str(err) + " under testElements in " + \
-                        str(testSet['key']) + ", discover cannot run."
+                except KeyError as err:
+                    error = exception_string.format(
+                        error=err,
+                        test_set=testSet['key']
+                    )
                     raise Exception("KeyError: " + str(err) + str(error))
                 for datatype in datatypes:
                     possible_datatypes.append(datatype)
 
         return str(self._uniq(possible_datatypes))
 
-    def getLogLevel(self, debug_level=None):
+    def get_log_level(self, debug_level=None):
         """ Allow user-configurable log-leveling """
         try:
             if debug_level == None:
                 debug_level = self.config['config']['logging']['level']
-        except KeyError, err:
+        except KeyError as err:
             print("Error: Missing " + str(err) +
                   " in config under config: loglevel.\nTry config: loglevel: Exceptions")
             print("1")
@@ -131,7 +146,7 @@ class ConfigObject(object):
         else:
             return logging.ERROR
 
-    def getLogger(self, loglevel):
+    def get_logger(self, loglevel):
         """ Returns a logger instance, used throughout codebase.
             This will set up a logger using syslog or file logging (or both)
             depending on the setting used in configuration.
@@ -161,12 +176,12 @@ class ConfigObject(object):
             self.config['config']['logging']['logformat']
         except KeyError, err:
             error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                + "Ensure \n  config:\n     " + str(err) + ":  is defined"
+                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
             raise Exception("KeyError: " + str(err) + str(error))
             exit(1)
 
         self.logger = logging.getLogger(packaging.package)
-        loglevel = self.getLogLevel(loglevel)
+        loglevel = self.get_log_level(loglevel)
         formatter = logging.Formatter(
             self.config['config']['logging']['logformat'])
 
@@ -179,7 +194,7 @@ class ConfigObject(object):
                     self.config['config']['logging']['logfile'])
             except KeyError, err:
                 error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     " + \
+                        + "Ensure \n  config:\n     " + \
                         str(err) + ":  is defined"
                 raise Exception("KeyError: " + str(err) + str(error))
                 exit(1)
@@ -196,7 +211,7 @@ class ConfigObject(object):
                 self.config['config']['logging']['syslog']['socket']
             except KeyError, err:
                 error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     " + \
+                        + "Ensure \n  config:\n     " + \
                         str(err) + ":  is defined"
                 raise Exception("KeyError: " + str(err) + str(error))
                 exit(1)
@@ -224,7 +239,7 @@ class ConfigObject(object):
         self.logger.info("Logger initialized.")
         return self.logger
 
-    def preFlightCheck(self):
+    def pre_flight_check(self):
         """ Trys loading all the config objects for zabbix conf. This can be expanded to do
             all syntax checking in this config class, instead of in the program logic as it is
             mostly right now.
@@ -237,7 +252,7 @@ class ConfigObject(object):
             self.config['config']
         except KeyError, err:
             error = "Error: Config missing zabbix: " + str(err) + " structure in config under config\n" \
-                + "Ensure \n  " + str(err) + ":  is defined"
+                    + "Ensure \n  " + str(err) + ":  is defined"
             self.logger.exception("KeyError: " + str(err) + str(error))
             exit(1)
 
@@ -245,7 +260,7 @@ class ConfigObject(object):
             self.config['config']['zabbix']
         except KeyError, err:
             error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                + "Ensure \n  config:\n     " + str(err) + ":  is defined"
+                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
             self.logger.exception("KeyError: " + str(err) + str(error))
             exit(1)
 
@@ -255,7 +270,7 @@ class ConfigObject(object):
             self.config['config']['zabbix']['item_key_format']
         except KeyError, err:
             error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                + "Ensure \n  config:\n     zabbix:\n        " + \
+                    + "Ensure \n  config:\n     zabbix:\n        " + \
                     str(err) + ":  is defined"
             self.logger.exception("KeyError: " + str(err) + str(error))
             exit(1)
@@ -265,20 +280,20 @@ class ConfigObject(object):
             self.config['config']['identity_providers']
         except KeyError, err:
             error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                + "Ensure \n  config:\n     " + str(err) + ":  is defined"
+                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
             self.logger.exception("KeyError: " + str(err) + str(error))
             exit(1)
 
         try:
-            for provider in self._loadConfigIdentityProviders():
+            for provider in self._load_config_identity_providers():
                 provider
         except AttributeError, err:
             error = "Error: Config missing: " + str(err) + " structure in config: identity_providers\n" \
-                + "Ensure \n  identity_providers follows documentation"
+                    + "Ensure \n  identity_providers follows documentation"
             self.logger.exception("AttributeError: " + str(err) + str(error))
             exit(1)
 
-        for provider in self._loadConfigIdentityProviders():
+        for provider in self._load_config_identity_providers():
             provider
             for module, kwargs in self.config['config']['identity_providers'][provider].iteritems():
                 module.split('/')
@@ -287,7 +302,7 @@ class ConfigObject(object):
 
         self.logger.info("Pre-flight config test OK")
 
-    def _loadTestSetList(self):
+    def _load_test_set_list(self):
         """ Used to prepare format of data for the checker functions
         out of the configuration file.
         Here is a sample of return output.
@@ -322,9 +337,10 @@ class ConfigObject(object):
 
         return self.checks
 
+
 if __name__ == "__main__":
     x = ConfigObject()
     x.load_yaml_file(config=None)
-    a = x._loadChecks()
+    a = x._load_checks()
     print(a)
-    print(x.getDatatypeList())
+    print(x.get_datatypes_list())

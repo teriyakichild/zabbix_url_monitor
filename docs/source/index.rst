@@ -4,7 +4,7 @@ URL Monitor Module
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+:maxdepth: 2
 
 
 .. only:: html

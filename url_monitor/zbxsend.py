@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import logging
+import socket
 import struct
 import time
-import socket
-import logging
+
 try:
     import json
 except:
@@ -11,7 +12,6 @@ except:
 
 
 class Metric(object):
-
     def __init__(self, host, key, value, clock=None):
         self.host = host
         self.key = key
@@ -25,7 +25,14 @@ class Metric(object):
 
 
 def send_to_zabbix(metrics, zabbix_host='127.0.0.1', zabbix_port=10051, timeout=15):
-    """Send set of metrics to Zabbix server."""
+    """
+    Send set of metrics to Zabbix server.
+    :param metrics:
+    :param zabbix_host:
+    :param zabbix_port:
+    :param timeout:
+    :return:
+    """
 
     j = json.dumps
     # Zabbix has very fragile JSON parser, and we cannot use json to dump
@@ -81,6 +88,12 @@ logger = logging.getLogger('zbxsender')
 
 
 def _recv_all(sock, count):
+    """
+
+    :param sock:
+    :param count:
+    :return:
+    """
     buf = ''
     while len(buf) < count:
         chunk = sock.recv(count - len(buf))

@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/python
-
-import os
-from setuptools import setup
+# !/usr/bin/python
 
 import sys
+
+from setuptools import setup
+
 sys.path.insert(0, '.')
 
-from url_monitor.packaging import version, authors, emails, license, install_requires
-from url_monitor.packaging import long_description, description, package, url, software_classified
+from url_monitor.packaging import (
+    version, authors, emails, license, install_requires,
+    long_description, description, package, url, software_classified
+)
 
 if __name__ == "__main__":
     setup(
