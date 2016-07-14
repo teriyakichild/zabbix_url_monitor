@@ -26,6 +26,7 @@ class Metric(object):
 def send_to_zabbix(logger, metrics, zabbix_host='127.0.0.1', zabbix_port=10051, timeout=15):
     """
     Send set of metrics to Zabbix server.
+    :param: logger:
     :param metrics:
     :param zabbix_host:
     :param zabbix_port:

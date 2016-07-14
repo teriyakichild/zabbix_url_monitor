@@ -4,7 +4,6 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
 from requests_oauthlib import OAuth1
-<<<<<<< HEAD
 
 import packaging
 from jpath import jpath
@@ -12,8 +11,6 @@ from jpath import jpath
 
 class AuthException(Exception):
     pass
-=======
->>>>>>> Use .format, add timeout features,
 
 
 def get_hostport_tuple(dport, dhost):
@@ -177,6 +174,7 @@ class WebCaller(object):
         :param verify:
         :param expected_http_status:
         :param identity_provider:
+        :param timeout:
         :return:
         """
 
