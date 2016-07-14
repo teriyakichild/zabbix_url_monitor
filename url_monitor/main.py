@@ -57,6 +57,25 @@ def check(testSet, configinstance, logger):
     config = configinstance.load()
     webinstance = commons.WebCaller(logger)
 
+    try:  # Grab local requests timeout else defer to main setting
+        tmout = int(testSet['data']['request_timeout'])  # in seconds
+    except:
+        tmout = int(config['config']['request_timeout'])
+
+    # SSL validation
+    try:  # Use SSL local security (if available)
+        globaldefer = False  # Disable global security lookup
+        vfyssl = commons.string2bool(testSet['data']['request_verify_ssl'])
+    except:
+        globaldefer = True
+
+    try:  # Use SSL global local security or default to SECURE
+        if globaldefer:
+            vfyssl = commons.string2bool(
+                config['config']['request_verify_ssl'])
+    except:
+        vfyssl = True
+
     # Make a request and check a resource
     try:
         uri = testSet['data']['uri']
@@ -66,15 +85,17 @@ def check(testSet, configinstance, logger):
                  "check cannot run.").format(err=err, item=testSet['key'])
         raise Exception("KeyError: " + str(err) + str(error))
     try:
-        response = webinstance.run(config, uri, verify=True, expected_http_status=str(
-            testSet['data']['ok_http_code']), identity_provider=testSet['data']['identity_provider'])
-    except KeyError as err:
+        response = webinstance.run(config, uri, verify=vfyssl, expected_http_status=str(
+            testSet['data']['ok_http_code']), identity_provider=testSet['data']['identity_provider'], timeout=tmout)
+    except KeyError, err:
         # We're missing ok code arent we?
-        error = "Error: Missing " + str(err) + " under testSet item " + str(testSet['key']) + "\n" \
-                + "If you don't know `ok_http_code: any` will cover most services."
-        raise Exception("KeyError: " + str(err) + str(error))
+        error =  """KeyError Missing {err}  under testSet item {key} If you don't know `ok_http_code: any` will cover most services.""".format(
+            err=err, key=str(testSet['key']))
+        logging.exception(error)
+        return 1
     except requests.exceptions.RequestException as e:
-        logging.error("Error: Requests exception " + str(e))
+        logging.exception(
+            "requests.exceptions.RequestException: {e}".format(e=e))
         return 1
     except commons.AuthException as err:
         logging.exception("Error logging into the ")
@@ -102,9 +123,8 @@ def check(testSet, configinstance, logger):
                     'data']['response_type'], element)
             except KeyError as err:
                 # We're missing one of these two keys aren't we?
-                logging.error("Error: Missing " + str(err) +
-                              " in config under testElement, check cannot run.")
-                logging.error("This must be response_type: json.")
+                logging.exception(
+                    "KeyError {err} missing in config under testElement, check cannot run. Must be response_type json or xml".format(err=err))
                 return 1
             # Append to the element things like response, statuscode,
             # and the request url, I'd like to monitor status codes but don't
@@ -136,12 +156,17 @@ def check(testSet, configinstance, logger):
                                   metrickey,
                                   element['request_response']))
 
+    z_host, z_port = commons.get_hostport_tuple(
+        packaging.const_zabbix_port, config['config']['zabbix']['host'])
+
+    timeout = config['config']['zabbix']['send_timeout']
     # Send metrics to zabbix
-    logging.info('Preparing to send metrics: ' + str(metrics))
-    logging.debug('Zabbix host ' +
-                  str(config['config']['zabbix']['host']) + ' port ' + str(config['config']['zabbix']['port']))
-    event.send_to_zabbix(metrics, config['config']['zabbix'][
-        'host'], config['config']['zabbix']['port'])
+    logging.debug(
+        "Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
+    logging.info("Transmit metrics to Zabbix @ {zbxhost}:{zbxport}".format(
+        zbxhost=z_host, zbxport=z_port))
+    event.send_to_zabbix(metrics=metrics, zabbix_host=z_host,
+                         zabbix_port=z_port, timeout=timeout, logger=logger)
     return 0
 
 

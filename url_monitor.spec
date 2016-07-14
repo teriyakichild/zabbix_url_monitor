@@ -47,6 +47,10 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Fri Jul 10 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 0.9.0-1
+- Added forked process for non interrupting io from zabbix.
+- Many other improvements
+
 * Fri Apr 29 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 0.8.5-1
 - Fixes to work better when singleton doesnt take, like on py2.6
 

@@ -13,6 +13,36 @@ class AuthException(Exception):
     pass
 
 
+def get_hostport_tuple(dport, dhost):
+    """ Tool to take a hostport combination 'localhost:22' string
+       and return a tuple ('localhost', 22). If no : seperator
+       is given then assume a default port passed as argv1
+    """
+    # Detect if port is designated
+    if ":" in dhost:
+        host = dhost.split(':')[0]
+        port = int(dhost.split(':')[1])
+        return host, port
+    else:  # Use default port
+        return dhost, dport
+
+
+def string2bool(allegedstring):
+    """ Tries to return a boolean from a string input if possible,
+        else it just returns the original item, allegedly a string.
+    """
+    if allegedstring.lower().startswith('t'):
+        return True
+    elif allegedstring.lower().startswith('f'):
+        return False
+    elif allegedstring == "1":
+        return True
+    elif allegedstring == "0":
+        return False
+    else:
+        return allegedstring
+
+
 def omnipath(data_object, type, element, throw_error_or_mark_none='none'):
     """
     Used to pull path expressions out of json or java path.
@@ -64,10 +94,10 @@ class WebCaller(object):
         try:
             identity_provider = identity_providers[identity_provider]
             auth_kwargs = identity_provider.values()[0]
-        except KeyError as err:
-            error = str(err) + " defined in testSet as identity_provider but is undeclared in identity_providers!"
-            self.logging.exception("KeyError: " + str(err) + str(error))
-            raise AuthException(error)
+        except KeyError, err:
+            error =  """KeyError {err} defined in testSet as identity_provider
+            but is undeclared in identity_providers!""".format(err=err)
+            self.logging.exception(error)
 
         # If provider is undefined, we get TypeError
         try:
@@ -100,12 +130,10 @@ class WebCaller(object):
             try:
                 module_strname = [x for x in identity_provider][0].split('/')[0]
                 class_strname = [x for x in identity_provider][0].split('/')[1]
-            except IndexError as err:
-                error = ("{provider}` is incomplete missing '/' char to "
-                         "seperate Module_Name from Class_Name").format(
-                    provider=provider_name
-                )
-                self.logging.exception("IndexError: " + str(err) + str(error))
+            except IndexError, err:
+                error =  """IndexError {err} {provider_name} is incomplete missing '/' char to seperate Module_Name from Class_Namebut is undeclared in identity_providers!""".format(
+                    err=err, provider_name=provider_name)
+                self.logging.exception(error)
 
             # Try to import the specified module
             try:
@@ -137,7 +165,7 @@ class WebCaller(object):
             # Set the external auth handler.
             self.session.auth = external_requests_auth_class(**auth_kwargs)
 
-    def run(self, config, url, verify, expected_http_status, identity_provider):
+    def run(self, config, url, verify, expected_http_status, identity_provider, timeout):
         """
         Executes a http request to gather the data.
         expected_http_status can be a list of expected codes.
@@ -146,12 +174,13 @@ class WebCaller(object):
         :param verify:
         :param expected_http_status:
         :param identity_provider:
+        :param timeout:
         :return:
         """
 
         self.auth(config, identity_provider)
         request = self.session.get(
-            url, headers=self.session_headers, verify=verify
+            url, headers=self.session_headers, verify=verify, timeout=timeout
         )
 
         # Turns comma seperated string from config to a list, then lower it
@@ -181,7 +210,7 @@ class WebCaller(object):
             x in item for x in resp_code), expected_codes)
 
         if not valid_response_code:
-            self.logging.exception(
-                'Bad HTTP response. Expected one of ' + str(expected_codes) + " recieved " + str(resp_code))
-
+            error =  """Bad HTTP response. Expected one of {expect} recieved {got}""".format(
+                expect=expected_codes, got=resp_code)
+            self.logging.exception(error)
         return request

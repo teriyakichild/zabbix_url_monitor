@@ -1,4 +1,6 @@
 config:
+  request_timeout: 30
+  request_verify_ssl: true
   logging:
     level: debug
     outputs: file,syslog
@@ -19,8 +21,8 @@ config:
             oauthv1-oauth_token: ''
             oauthv1-token_secet: ''
   zabbix:
-    host: localhost
-    port: 6697
+    host: localhost:10051
+    send_timeout: 15
     item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
 testSet:
 -  "jobStatsTotals"
@@ -28,6 +30,7 @@ testSet:
     response_type: json
     identity_provider: basicAuthExampleProvider
     ok_http_code: 200
+    request_timeout: 5
     testElements:
       - key: Job.success
         jsonvalue: ./jobSuccess

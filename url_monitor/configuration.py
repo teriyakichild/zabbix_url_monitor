@@ -7,6 +7,8 @@ import socket
 import yaml
 
 import packaging
+import logging.handlers
+import commons
 
 
 class ConfigObject(object):
@@ -175,9 +177,9 @@ class ConfigObject(object):
             self.config['config']['logging']['level']
             self.config['config']['logging']['logformat']
         except KeyError, err:
-            error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
-            raise Exception("KeyError: " + str(err) + str(error))
+            error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         self.logger = logging.getLogger(packaging.package)
@@ -193,10 +195,8 @@ class ConfigObject(object):
                 filehandler = logging.FileHandler(
                     self.config['config']['logging']['logfile'])
             except KeyError, err:
-                error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                        + "Ensure \n  config:\n     " + \
-                        str(err) + ":  is defined"
-                raise Exception("KeyError: " + str(err) + str(error))
+                error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
+                    err=err)
                 exit(1)
             filehandler.setLevel(loglevel)
             self.logger.addHandler(filehandler)
@@ -210,18 +210,12 @@ class ConfigObject(object):
                 self.config['config']['logging']['syslog']['server']
                 self.config['config']['logging']['syslog']['socket']
             except KeyError, err:
-                error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                        + "Ensure \n  config:\n     " + \
-                        str(err) + ":  is defined"
-                raise Exception("KeyError: " + str(err) + str(error))
+                error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
+                    err=err)
+                logging.exception(error)
                 exit(1)
-
-            loghost = self.config['config']['logging']['syslog']['server']
-            # Detect if port uses non defaults.
-            if ":" in loghost:
-                loghost = loghost.split(':')[0], int(loghost.split(':')[1])
-            else:
-                loghost = loghost, 514
+            sysloghost = commons.get_hostport_tuple(dport=packaging.const_syslog_port, dhost=self.config[
+                'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']
             if socktype == "tcp":
@@ -229,11 +223,16 @@ class ConfigObject(object):
             else:
                 socktype = socket.SOCK_DGRAM
 
-            sysloghandler = logging.handlers.SysLogHandler(
-                address=loghost, socktype=socktype)
-            sysloghandler.setLevel(loglevel)
-            self.logger.addHandler(sysloghandler)
-            sysloghandler.setFormatter(formatter)
+            try:
+                sysloghandler = logging.handlers.SysLogHandler(
+                    address=sysloghost, socktype=socktype)
+                sysloghandler.setLevel(loglevel)
+                self.logger.addHandler(sysloghandler)
+                sysloghandler.setFormatter(formatter)
+            except socket.error, err:
+                error =  """Syslog error with socket.write() on host {h}:{p} {err}""".format(
+                    err=err, h=sysloghost[0], p=sysloghost[1])
+                logging.exception(error)
 
         logging.basicConfig(level=loglevel)
         self.logger.info("Logger initialized.")
@@ -251,46 +250,53 @@ class ConfigObject(object):
         try:
             self.config['config']
         except KeyError, err:
-            error = "Error: Config missing zabbix: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  " + str(err) + ":  is defined"
-            self.logger.exception("KeyError: " + str(err) + str(error))
+            error =  """KeyError configs missing `zabbix: {err}` structure. Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         try:
             self.config['config']['zabbix']
         except KeyError, err:
-            error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
-            self.logger.exception("KeyError: " + str(err) + str(error))
+            error =  """KeyError configs missing `zabbix: {err}` structure. Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         try:
-            self.config['config']['zabbix']['port']
             self.config['config']['zabbix']['host']
+            self.config['config']['zabbix']['send_timeout']
             self.config['config']['zabbix']['item_key_format']
         except KeyError, err:
-            error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     zabbix:\n        " + \
-                    str(err) + ":  is defined"
-            self.logger.exception("KeyError: " + str(err) + str(error))
+            error =  """KeyError configs missing `config: zabbix: {err}:` structure. Can't continue.""".format(
+                err=err)
+            logging.exception(error)
+            exit(1)
+
+        try:
+            self.config['config']['request_timeout']
+        except KeyError, err:
+            error =  """KeyError configs missing `config: config: {err}:` structure. (Default timeout missing) Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         # Ensure identity items exist
         try:
             self.config['config']['identity_providers']
         except KeyError, err:
-            error = "Error: Config missing: " + str(err) + " structure in config under config\n" \
-                    + "Ensure \n  config:\n     " + str(err) + ":  is defined"
-            self.logger.exception("KeyError: " + str(err) + str(error))
+            error =  """KeyError configs missing `config: config: {err}:` structure. (Identity Providers) Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         try:
             for provider in self._load_config_identity_providers():
                 provider
         except AttributeError, err:
-            error = "Error: Config missing: " + str(err) + " structure in config: identity_providers\n" \
-                    + "Ensure \n  identity_providers follows documentation"
-            self.logger.exception("AttributeError: " + str(err) + str(error))
+            error =  """KeyError configs missing {err} structure in `config: identity_providers`. Can't continue.""".format(
+                err=err)
+            logging.exception(error)
             exit(1)
 
         for provider in self._load_config_identity_providers():

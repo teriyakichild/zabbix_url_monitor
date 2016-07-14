@@ -12,7 +12,6 @@ Rackspace Cloud Monitoring, collectd, etc...
 package = 'url_monitor'
 project = "URL Monitor Module"
 project_no_spaces = project.replace(' ', '')
-version = '0.8.9'
 description = (
     'A zabbix plugin to perform URL endpoint monitoring for JSON and XML REST '
     'APIs, supporting multiple http auth mechinisms'
@@ -38,13 +37,11 @@ install_requires = ['python-daemon',
                     'requests-oauthlib',
                     'oauthlib',
                     'argparse',
-                    'PyYAML',
-                    'importlib'
+                    'PyYAML'
                     ]
 rpm_requires = ['python',
                 'python-daemon',
                 'python-setuptools',
-                'python-importlib',  # cent 6.5
                 'python-requests',
                 'python-requests-oauthlib',
                 'python-argparse',
@@ -62,3 +59,8 @@ software_classified = [
     'Topic :: System :: Networking :: Monitoring',
     'Topic :: System :: Systems Administration ',
 ]
+
+# Internal constants
+# Default assuming networking ports
+const_syslog_port = 514
+const_zabbix_port = 10051
