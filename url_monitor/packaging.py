@@ -11,6 +11,7 @@ Rackspace Cloud Monitoring, collectd, etc...
 # The package name, which is also the "UNIX name" for the project.
 package = 'url_monitor'
 project = "URL Monitor Module"
+version = "1.0.0"
 project_no_spaces = project.replace(' ', '')
 description = (
     'A zabbix plugin to perform URL endpoint monitoring for JSON and XML REST '
