@@ -1,25 +1,31 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           url_monitor
-Version:        %(%{__python} -c "import url_monitor.packaging as namespace; print(namespace.version)")
+Version:        1.0.0
 Release:        1%{?dist}
 Group:          Applications/Systems
 Summary:        This is an external script for zabbix for monitoring restful endpoints for data.
 
 License:        ASLv2
-URL:            %(%{__python} -c "import url_monitor.packaging as namespace; print(namespace.url)")
+URL:            https://github.com/rackerlabs/zabbix_url_monitor
 Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires:  python-setuptools
 Requires(pre):  shadow-utils
-%(%{__python} -c "import sys; import url_monitor.packaging as namespace; x = lambda x: sys.stdout.write(\" \".join(x) + \"\"); sys.stdout.write(\"Requires: \"); str(x(namespace.rpm_requires))")
+Requires:       python
+Requires:       python-daemon
+Requires:       python-setuptools
+Requires:       python-requests
+Requires:       python-requests-oauthlib
+Requires:       python-argparse
+Requires:       PyYAML
 
 %define service_name %{name}d
 
 %description
-%(%{__python} -c "import url_monitor.packaging as namespace; print(namespace.long_description)")
+A zabbix plugin to perform URL endpoint monitoring for JSON and XML REST APIs, supporting multiple http auth mechinisms
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -47,6 +53,10 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Mon Jul 18 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.0.0-1
+- Make spec mock friendly
+- Fix a bug where missing variable from packaging.py
+
 * Fri Jul 10 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 0.9.0-1
 - Added forked process for non interrupting io from zabbix.
 - Many other improvements
