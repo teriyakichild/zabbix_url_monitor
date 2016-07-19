@@ -29,29 +29,7 @@ authors_string = ', '.join(authors)
 emails = ['jon.kelley@rackspace.com',
           'nick.bales@rackspace.com',
           'landon.jurgens@rackspace.com']
-license = 'ASLv2'
-company = "Rackspace, Inc."
-copyright = '2016 ' + company
 url = 'https://github.com/rackerlabs/zabbix_url_monitor'
-install_requires = ['python-daemon',
-                    'requests',
-                    'requests-oauthlib',
-                    'oauthlib',
-                    'argparse',
-                    'PyYAML'
-                    ]
-software_classified = [
-    'Intended Audience :: System Administrators',
-    'License :: OSI Approved :: Apache Software License',
-    'Natural Language :: English',
-    'Operating System :: OS Independent',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 3',
-    'Topic :: System :: Monitoring',
-    'Topic :: System :: Networking :: Monitoring',
-    'Topic :: System :: Systems Administration ',
-]
 
 # Internal constants
 # Default assuming networking ports
