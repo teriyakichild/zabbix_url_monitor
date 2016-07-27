@@ -31,7 +31,3 @@ emails = ['jon.kelley@rackspace.com',
           'landon.jurgens@rackspace.com']
 url = 'https://github.com/rackerlabs/zabbix_url_monitor'
 
-# Internal constants
-# Default assuming networking ports
-const_syslog_port = 514
-const_zabbix_port = 10051

@@ -54,6 +54,9 @@ def check(testSet, configinstance, logger):
     :param logger:
     :return:
     """
+
+    constant_zabbix_port = 10051
+
     config = configinstance.load()
     webinstance = commons.WebCaller(logger)
 
@@ -157,7 +160,7 @@ def check(testSet, configinstance, logger):
                                   element['request_response']))
 
     z_host, z_port = commons.get_hostport_tuple(
-        packaging.const_zabbix_port, config['config']['zabbix']['host'])
+        constant_zabbix_port, config['config']['zabbix']['host'])
 
     timeout = config['config']['zabbix']['send_timeout']
     # Send metrics to zabbix

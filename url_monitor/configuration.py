@@ -18,6 +18,7 @@ class ConfigObject(object):
     def __init__(self):
         self.config = None
         self.checks = None
+        self.constant_syslog_port = 514
 
     def load_yaml_file(self, config=None):
         """
@@ -214,7 +215,7 @@ class ConfigObject(object):
                     err=err)
                 logging.exception(error)
                 exit(1)
-            sysloghost = commons.get_hostport_tuple(dport=packaging.const_syslog_port, dhost=self.config[
+            sysloghost = commons.get_hostport_tuple(dport=self.constant_syslog_port, dhost=self.config[
                 'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']
