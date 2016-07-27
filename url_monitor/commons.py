@@ -5,7 +5,6 @@ from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
 from requests_oauthlib import OAuth1
 
-import packaging
 from jpath import jpath
 
 
@@ -109,7 +108,7 @@ class WebCaller(object):
         self.session_headers = {
             'content-type': 'application/json',
             'accept': 'application/json',
-            'user-agent': 'python/url_monitor v' + packaging.version + ' (A zabbix monitoring plugin)'
+            'user-agent': 'python/url_monitor (A zabbix monitoring plugin)'
         }
         if provider_name == "none":
             self.session.auth = None

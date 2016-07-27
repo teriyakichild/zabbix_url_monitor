@@ -10,6 +10,7 @@ import packaging
 import logging.handlers
 import commons
 
+from url_monitor import package as packagemacro
 
 class ConfigObject(object):
     """ This class makes YAML configuration
@@ -18,6 +19,7 @@ class ConfigObject(object):
     def __init__(self):
         self.config = None
         self.checks = None
+        self.constant_syslog_port = 514
 
     def load_yaml_file(self, config=None):
         """
@@ -182,7 +184,7 @@ class ConfigObject(object):
             logging.exception(error)
             exit(1)
 
-        self.logger = logging.getLogger(packaging.package)
+        self.logger = logging.getLogger(packagemacro)
         loglevel = self.get_log_level(loglevel)
         formatter = logging.Formatter(
             self.config['config']['logging']['logformat'])
@@ -214,7 +216,7 @@ class ConfigObject(object):
                     err=err)
                 logging.exception(error)
                 exit(1)
-            sysloghost = commons.get_hostport_tuple(dport=packaging.const_syslog_port, dhost=self.config[
+            sysloghost = commons.get_hostport_tuple(dport=self.constant_syslog_port, dhost=self.config[
                 'config']['logging']['syslog']['server'])
 
             socktype = self.config['config']['logging']['syslog']['socket']
