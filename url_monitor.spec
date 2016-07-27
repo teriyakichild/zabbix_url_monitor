@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           url_monitor
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Group:          Applications/Systems
 Summary:        This is an external script for zabbix for monitoring restful endpoints for data.
@@ -53,6 +53,9 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Wed Jul 27 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.0.1-1
+- Fix by removing oprhaned references from __init__.py
+
 * Mon Jul 18 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.0.0-1
 - Make spec mock friendly
 - Fix a bug where missing variable from packaging.py
