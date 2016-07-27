@@ -10,6 +10,7 @@ import packaging
 import logging.handlers
 import commons
 
+from url_monitor import package as packagemacro
 
 class ConfigObject(object):
     """ This class makes YAML configuration
@@ -183,7 +184,7 @@ class ConfigObject(object):
             logging.exception(error)
             exit(1)
 
-        self.logger = logging.getLogger(packaging.package)
+        self.logger = logging.getLogger(packagemacro)
         loglevel = self.get_log_level(loglevel)
         formatter = logging.Formatter(
             self.config['config']['logging']['logformat'])
