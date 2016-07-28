@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-__author__ = packaging.authors[0]
-
 # The package name, which is also the "UNIX name" for the project.
 package = 'url_monitor'
 project = "URL Monitor Module"
@@ -17,4 +15,3 @@ authors_string = ', '.join(authors)
 emails = ['jon.kelley@rackspace.com',
           'nick.bales@rackspace.com',
           'landon.jurgens@rackspace.com']
-

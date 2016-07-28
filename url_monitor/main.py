@@ -32,8 +32,7 @@ def return_epilog():
     return (
         "{project}\n"
         "{footerline}\n"
-        "{authors}\n"
-        "URL: <{url}>"
+        "{authors}"
     ).format(
         footerline=str('-' * 72),
         project=projectmacro,
@@ -158,7 +157,7 @@ def check(testSet, configinstance, logger):
     z_host, z_port = commons.get_hostport_tuple(
         constant_zabbix_port, config['config']['zabbix']['host'])
 
-    timeout = config['config']['zabbix']['send_timeout']
+    timeout = float(config['config']['zabbix']['send_timeout'])
     # Send metrics to zabbix
     logging.debug(
         "Prepping transmit metrics to zabbix... {metrics}".format(metrics=metrics))
@@ -257,6 +256,7 @@ def main(arguements=None):
         "--version",
         action='version',
         version='UNSUPPORTED OPTION'
+    )
     arg_parser.add_argument(
         "--key",
         "-k",
