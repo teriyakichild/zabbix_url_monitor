@@ -6,7 +6,6 @@ import socket
 
 import yaml
 
-import packaging
 import logging.handlers
 import commons
 
