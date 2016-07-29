@@ -139,7 +139,7 @@ The logformat can be changed as needed (confirming to python-logging conventions
 ### <i class="icon-book"></i>Auth/Identity Providers
 If your API or resource requires authentication you're going to want to configure an identity provider. Identity providers are defined in the main config. The first key name is the alias for the identity provider, then the second key defines the actual requests auth provider to use for your identity. The third set of keys defines the kwargs to pass to that identity provider.
 
-This can be a built-in `requests.auth` provider as exemplified below or an external python module you've written or found to be an importable requests auth provider. Here is a configuration covering most implementations of requests authentication modules. 
+This can be a built-in `requests.auth` provider as exemplified below or an external python module you've written or found to be an importable requests auth provider (as exemplified by requests_py_module/className. The module_kwargs_1 are arguements passed to the imported module. The KWARGS if not quoted strings can be python objects, like `bools`,`dict`,`list` etc. passed directly to your module.
 
 PRO TIP: If you want to use the same identity provider, you can call it multiple times and only have to use a different aliase, such as the case of exampleCustomProvider. exampleCustomProvider could be duplicated as NEWexampleCustomProvider with the same keys beneath it.
 
