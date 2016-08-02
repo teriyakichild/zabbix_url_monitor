@@ -25,20 +25,20 @@ config:
     send_timeout: 15
     item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
 testSet:
--  "jobStatsTotals"
-    uri: https://api.net/1.1/jobTotals
-    response_type: json
-    identity_provider: basicAuthExampleProvider
-    ok_http_code: 200
-    request_timeout: 5
-    testElements:
-      - key: Job.success
-        jsonvalue: ./jobSuccess
-        datatype: counter,string
-        metricname: jobSuccess
-        unit_of_measure: "events"
-      - key: Job.failure
-        jsonvalue: ./jobFailure
-        datatype: counter
-        metricname: jobFailure
-        unit_of_measure: "events"
+  -  "jobStatsTotals"
+      uri: https://api.net/1.1/jobTotals
+      response_type: json
+      identity_provider: basicAuthExampleProvider
+      ok_http_code: 200
+      request_timeout: 5
+      testElements:
+        - key: Job.success
+          jsonvalue: ./jobSuccess
+          datatype: counter,string
+          metricname: jobSuccess
+          unit_of_measure: "events"
+        - key: Job.failure
+          jsonvalue: ./jobFailure
+          datatype: counter
+          metricname: jobFailure
+          unit_of_measure: "events"

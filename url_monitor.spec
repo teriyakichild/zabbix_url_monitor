@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           url_monitor
-Version:        1.0.2
+Version:        1.0.3
 Release:        1%{?dist}
 Group:          Applications/Systems
 Summary:        This is an external script for zabbix for monitoring restful endpoints for data.
@@ -53,6 +53,9 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Thu Aug 2 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.0.3-1
+- Fix the --key flag for selective run.
+
 * Thu Jul 27 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.0.2-1
 - Remove misreferenced packaging import(s)
 - Remove {url} from epilog output

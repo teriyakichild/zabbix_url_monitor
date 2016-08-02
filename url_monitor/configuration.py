@@ -313,37 +313,40 @@ class ConfigObject(object):
         """ Used to prepare format of data for the checker functions
         out of the configuration file.
         Here is a sample of return output.
-        [{
-            "elements": [
-                {
-                    "jsonvalue": "./jobSuccess",
-                    "key": "StatusJob.success"
-                },
-                {
-                    "jsonvalue": "./jobFailure",
-                    "key": "StatusJob.failure"
-                }
-            ],
-            "response_type": "json",
-            "url": "https://x.net/v3/jobs/statusjob/stats/totals"
-        },
-        {
-            "elements": [
-                {
-                    "jsonvalue": "./report[1]/status",
-                    "key": "./report[1]/name"
-                },
-            ],
-            "response_type": "json",
-            "url": "https://x.net/dependencies"
-        }]"""
+        [
+            { ...... 
+            },
+            { ......
+            },
+            {
+                "data": {
+                    "testElements": [
+                        {
+                            "datatype": "string", 
+                            "jsonvalue": "status", 
+                            "unit_of_measure": "events", 
+                            "key": "zabbix_key", 
+                            "metricname": "test"
+                        }, 
+                    ], 
+                    "ok_http_code": 200, 
+                    "response_type": "json", 
+                    "identity_provider": "None", 
+                    "keyname": null, 
+                    "uri": "https://localhost"
+                }, 
+                "key": "keyname"
+            }
+        ]
+        """
         self.checks = []
+
         for testSet in self.config['testSet']:
             for key, v in testSet.iteritems():
-                self.checks.append({'key': key, 'data': testSet[key]})
+                if v == None:
+                    self.checks.append({'key': key, 'data': testSet})
 
         return self.checks
-
 
 if __name__ == "__main__":
     x = ConfigObject()
