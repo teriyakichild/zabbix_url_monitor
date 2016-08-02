@@ -179,7 +179,7 @@ PRO TIP: If you want to use the same identity provider, you can call it multiple
 ### <i class="icon-book"></i>Example of of an API testSet configuration
 
     testSet:
-    -  "my_cool_api":
+      "my_cool_api":
         uri: https://my_private_api/health?json
         response_type: json
         identity_provider: basicProvider
@@ -272,29 +272,32 @@ Assume you have a web service at localhost serving a status page like this JSON 
 
 You could write the following test expressions in your configuration to create Zabbix items out of pieces of information in your API response.
 
-	testSet:
-	-  "exampleAPI":
-	    uri: http://localhost:8888/status
-	    response_type: json
-	    identity_provider: none
-	    ok_http_code: 200,204
+
+    item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
+
+testSet:
+  "exampleAPI":
+    uri: http://localhost:8888/status
+      response_type: json
+      identity_provider: none
+      ok_http_code: 200,204
       request_verify_ssl: true
-	    testElements:
-	      - key: keyname
-	        jsonvalue: ./api_status/mongo
-	        datatype: string
-	        metricname: "api_status_for_mongo"
-	        unit_of_measure: "boolean"
-	      - key: keyname2
-	        jsonvalue: ./api_status/schedulerErrorCounts
-	        datatype: integer
-	        metricname: "schedulerErrorCounts"
-	        unit_of_measure: "boolean"
-	      - key: keyname3
-	        jsonvalue: ./elements[1]
-	        datatype: integer
-	        metricname: "thing"
-	        unit_of_measure: "boolean"
+      testElements:
+        - key: keyname
+          jsonvalue: ./api_status/mongo
+          datatype: string
+          metricname: "api_status_for_mongo"
+          unit_of_measure: "boolean"
+        - key: keyname2
+          jsonvalue: ./api_status/schedulerErrorCounts
+          datatype: integer
+          metricname: "schedulerErrorCounts"
+          unit_of_measure: "boolean"
+        - key: keyname3
+          jsonvalue: ./elements[1]
+          datatype: integer
+          metricname: "thing"
+          unit_of_measure: "boolean"
 
 
 Then when you run the check you will see the following output (in debug mode)
