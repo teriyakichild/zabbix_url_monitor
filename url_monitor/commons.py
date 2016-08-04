@@ -163,6 +163,7 @@ class WebCaller(object):
 
             # Set the external auth handler.
             self.session.auth = external_requests_auth_class(**auth_kwargs)
+            self.logging.debug("{i} with kwargs {args} ".format(i=self.session.auth, args=auth_kwargs))
 
     def run(self, config, url, verify, expected_http_status, identity_provider, timeout):
         """
@@ -176,6 +177,7 @@ class WebCaller(object):
         :param timeout:
         :return:
         """
+        self.logging.debug("New request with headers {head} at url {url} ".format( head=self.session_headers, url=url))
 
         self.auth(config, identity_provider)
         request = self.session.get(

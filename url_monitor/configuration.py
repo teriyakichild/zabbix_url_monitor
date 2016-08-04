@@ -5,7 +5,7 @@ import logging.handlers
 import socket
 
 import yaml
-
+import sys
 import logging.handlers
 import commons
 
@@ -34,7 +34,8 @@ class ConfigObject(object):
                 self.config = (yaml.load(stream))
                 return self.config
             except yaml.YAMLError as exc:
-                print(exc)
+                print("Exception: YAML Parse Error!\n{exc}".format(exc=exc))
+                sys.exit(1)
 
     def load(self):
         """ This is the main config load function to pull in
@@ -310,40 +311,53 @@ class ConfigObject(object):
         self.logger.info("Pre-flight config test OK")
 
     def _load_test_set_list(self):
-        """ Used to prepare format of data for the checker functions
-        out of the configuration file.
-        Here is a sample of return output.
-        [{
-            "elements": [
-                {
-                    "jsonvalue": "./jobSuccess",
-                    "key": "StatusJob.success"
-                },
-                {
-                    "jsonvalue": "./jobFailure",
-                    "key": "StatusJob.failure"
-                }
-            ],
-            "response_type": "json",
-            "url": "https://x.net/v3/jobs/statusjob/stats/totals"
-        },
-        {
-            "elements": [
-                {
-                    "jsonvalue": "./report[1]/status",
-                    "key": "./report[1]/name"
-                },
-            ],
-            "response_type": "json",
-            "url": "https://x.net/dependencies"
-        }]"""
-        self.checks = []
-        for testSet in self.config['testSet']:
-            for key, v in testSet.iteritems():
-                self.checks.append({'key': key, 'data': testSet[key]})
+        """ Used to prepare format of data for the checker functions.
 
-        return self.checks
+        [
+            {
+                  "data": {
+                       "identity_provider": "None",
+                       "testElements": [
+                            {
+                                 "datatype": "string",
+                                 "jsonvalue": "./value/to/look/for[0]",
+                                 "unit_of_measure": "events",
+                                 "key": "zabbix_key",
+                                 "metricname": "a friendly name"
+                            },
+                       ],
+                       "response_type": "json",
+                       "ok_http_code": 200,
+                       "uri": "https://localhost"
+                  },
+                  "key": "testSetName"
+             },
+             {
+                  "data": {
+                       "identity_provider": "my_identity_alias
+                       "testElements": [
+                            {
+                                 "datatype": "string",
+                                 "jsonvalue": "./value/to/look/for[1]",
+                                 "unit_of_measure": "events",
+                                 "key": "zabbix_key",
+                                 "metricname": "a friendly name"
+                            },
+                       ],
+                       "response_type": "json",
+                       "ok_http_code": 200,
+                       "uri": "https://localhost"
+                  },
+                  "key": "testSetName2"
+             }
+        ]
+        """
 
+        checks = []
+        for k, v in self.config['testSet'].iteritems():
+            checks.append({'key': k, 'data': v})
+
+        return checks
 
 if __name__ == "__main__":
     x = ConfigObject()
