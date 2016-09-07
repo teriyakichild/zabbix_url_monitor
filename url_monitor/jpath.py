@@ -37,7 +37,7 @@ def jpath(json_str, path, throw_error_or_mark_none='none'):
         else:
             value = value.get(key)
 
-        if index:
+        if index is not None:
             try:
                 value = value[index]
             except:
