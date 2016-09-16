@@ -309,8 +309,12 @@ def main(arguements=None):
             except Exception as e:
                 logger.exception(e)
         if len(failed_exits) > 0:
-            logger.exception(str(len(failed_exits)) +
-                             " checks have failed: " + str(failed_exits) + "")
+            logger.debug("{0} checks have failed".format(
+                str(len(failed_exits))
+            ))
+            print("1")
+        else:
+            print("0")
     elif args.COMMAND == "discover":
         discover(args, configinstance, logger)
 
