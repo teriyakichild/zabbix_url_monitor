@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           url_monitor
-Version:        1.1.1
+Version:        1.1.2
 Release:        1%{?dist}
 Group:          Applications/Systems
 Summary:        This is an external script for zabbix for monitoring restful endpoints for data.
@@ -53,6 +53,9 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Fri Sep 16 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.1.2-2
+- Add stdout print on exit to match with Zabbix status evaluation
+
 * Thu Aug 2 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 1.1.0-1
 - Fix the --key flag for selective run.
 - Fix the yaml configuration file to meet YAML spec.
@@ -78,4 +81,3 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 
 * Fri Apr 29 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 0.8.5-1
 - Fixes to work better when singleton doesnt take, like on py2.6
-
