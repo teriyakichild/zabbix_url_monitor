@@ -266,6 +266,7 @@ class ConfigObject(object):
             exit(1)
 
         try:
+            self.config['config']['zabbix']['server']
             self.config['config']['zabbix']['host']
             self.config['config']['zabbix']['send_timeout']
             self.config['config']['zabbix']['item_key_format']

@@ -99,6 +99,9 @@ def check(testSet, configinstance, logger):
         logging.exception("Error logging into the ")
         return 1
 
+    # This is the host key defined in your metric.
+    # This matches the name of your host key in the zabbix ui under 'hosts'
+    zabbix_metric_host = config['config']['zabbix']['host']
 
     metrics = []
     # For each testElement do our path check.
@@ -150,12 +153,12 @@ def check(testSet, configinstance, logger):
             metrickey = config['config']['zabbix'][
                 'item_key_format'].format(**element)
 
-            metrics.append(Metric('url_monitor',
+            metrics.append(Metric(zabbix_metric_host,
                                   metrickey,
                                   element['request_response']))
 
     z_host, z_port = commons.get_hostport_tuple(
-        constant_zabbix_port, config['config']['zabbix']['host'])
+        constant_zabbix_port, config['config']['zabbix']['server'])
 
     timeout = float(config['config']['zabbix']['send_timeout'])
     # Send metrics to zabbix
