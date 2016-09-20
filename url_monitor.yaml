@@ -21,8 +21,8 @@ config:
             oauthv1-oauth_token: ''
             oauthv1-token_secet: ''
   zabbix:
+    host: api.net
     server: localhost:10051
-    host: zabbix_hostitem_key
     send_timeout: 15
     item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
 testSet:

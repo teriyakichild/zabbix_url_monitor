@@ -99,8 +99,8 @@ def check(testSet, configinstance, logger):
         logging.exception("Error logging into the ")
         return 1
 
-    # This is the host key defined in your metric.
-    # This matches the name of your host key in the zabbix ui under 'hosts'
+    # This is the host defined in your metric.
+    # This matches the name of your host in zabbix.
     zabbix_metric_host = config['config']['zabbix']['host']
 
     metrics = []

@@ -2,7 +2,7 @@
 
 Feature:
 
-  - Add support for defining custom zabbix host key item name. (#20, @jonkelleyatrackspace)
+  - Add support for using custom zabbix host name. (#20, @jonkelleyatrackspace)
   - Rename zabbix: host to zabbix: server, to make room for new feature. (#20, @jonkelleyatrackspace)
 
 ## 1.1.2-2 (Sep 16 2016)

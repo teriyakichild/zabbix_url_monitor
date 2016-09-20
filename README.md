@@ -240,11 +240,14 @@ This controls where your Zabbix metrics are sent for collection.
 
 > **Config Key Reference:**
 >
-> **`host`** is your Zabbix host:port. If you leave out a : port designator the default 10051 will be assumed.
+> **`host`** is the name of the host in zabbix used to store metrics.
+>
+> **`server`** is your Zabbix host:port. If you leave out a : port designator the default 10051 will be assumed.
 
     config:
       zabbix:
-        host: localhost:10051
+        host: api.net
+        server: localhost:10051
         item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]" 
 
 
