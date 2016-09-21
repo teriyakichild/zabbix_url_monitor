@@ -65,7 +65,7 @@
                     <snmp_community/>
                     <snmp_oid/>
                     <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter]</key>
-                    <delay>30</delay>
+                    <delay>3600</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -138,7 +138,7 @@
                     <snmp_community/>
                     <snmp_oid/>
                     <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, integer]</key>
-                    <delay>30</delay>
+                    <delay>3600</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -211,7 +211,7 @@
                     <snmp_community/>
                     <snmp_oid/>
                     <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, string]</key>
-                    <delay>30</delay>
+                    <delay>3600</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
