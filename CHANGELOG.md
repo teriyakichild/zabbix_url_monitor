@@ -1,3 +1,10 @@
+## 2.0.1-1 (Oct 10 2016)
+
+Feature:
+
+  - pep updates (#21, @jonkelleyatrackspace)
+  - code refactoring and cleanup (#21, @jonkelleyatrackspace)
+
 ## 2.0.0-1 (Sep 19 2016)
 
 Feature:

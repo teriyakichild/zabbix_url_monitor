@@ -37,24 +37,126 @@ class ConfigObject(object):
                 print("Exception: YAML Parse Error!\n{exc}".format(exc=exc))
                 sys.exit(1)
 
+    def get_test_set(self, testSet):
+        """
+        return specific values of interest from a test set
+
+        :return dict:
+        """
+        ts = {}
+        ts['data'] = {}
+        # get uri
+        try:
+            ts['data']['uri'] = testSet['data']['uri']
+        except KeyError as err:
+            # We're missing the uri aren't we?
+            error = ("Error: Missing {err} under testSet item {item}, "
+                     "check cannot run.").format(err=err, item=testSet['key'])
+            raise Exception("KeyError: " + str(err) + str(error))
+
+        # get ok_http_code
+        try:
+            ts['data']['ok_http_code'] = testSet['data']['ok_http_code']
+        except KeyError as err:
+            # We're missing the uri aren't we?
+            error = ("Error: Missing {err} under testSet item {item}, "
+                     "check cannot run.").format(err=err, item=testSet['key'])
+            raise Exception("KeyError: " + str(err) + str(error))
+
+        # get identity_provider
+        try:
+            ts['data']['identity_provider'] = testSet['data'][
+            'identity_provider']
+        except KeyError as err:
+            # We're missing the uri aren't we?
+            error = ("Error: Missing {err} under testSet item {item}, "
+                     "check cannot run.").format(err=err, item=testSet['key'])
+            raise Exception("KeyError: " + str(err) + str(error))
+
+        return ts
+
+    def get_request_timeout(self, testSet):
+        """
+        Getter to return a requests.timeout setting.
+
+        Grab local the testSet request timeout else
+        defer to global setting.
+
+        :param testSet:   name of the current testset
+        :return integer:  for requests.timeout
+        """
+        config = self.load()
+        defined = False
+        try:
+            timeout = int(testSet['data']['request_timeout'])
+            defined = True
+        except KeyError, err:
+            err = err
+
+        try:
+            timeout = int(config['config']['request_timeout'])
+            defined = True
+        except KeyError, err:
+            err = err
+
+        if not defined:
+            error =  "KeyError configs missing `config: config: {err}:` "
+            "structure. (Default timeout missing) Can't continue.".format(
+                err=err
+                )
+            logging.exception(error)
+            exit(1)
+        else:
+            return timeout
+
+    def get_verify_ssl(self, testSet):
+        """
+        Getter bool around require SSL within requests lib.
+
+        :param testSet:   name of the current testset
+        :return bool:
+        """
+        config = self.load()
+        # SSL validation
+        defined = False
+        try:  # Use SSL local security (if available)
+            require_ssl = commons.string2bool(testSet['data'][
+                'request_verify_ssl'])
+            defined = True
+        except:
+            pass
+
+        try:  # Try global setting, else require_ssl=True
+            if not defined:
+                require_ssl = commons.string2bool(
+                    config['config']['request_verify_ssl'])
+        except:
+            require_ssl = True # No setting, secure by default.
+
+        return require_ssl
+
     def load(self):
         """ This is the main config load function to pull in
-            configurations to convienent and common namespace. """
+            configurations to convienent and common namespace.
+        """
         return {'checks': self._load_checks(),
                 'config': self._load_config(),
                 'identity_providers': self._load_config_identity_providers()}
 
     def _load_checks(self, withIdentityProvider=None):
         """ Loads the checks for work to be run.
-            Default loads all checks, withIdentityProvider option will limit checks
-            returned by identity provider (useful for smart async request grouping)  """
+            Default loads all checks, withIdentityProvider option will limit
+            checks returned by identity provider (useful for smart async
+            request grouping)
+        """
         loaded_checks = []
 
         if withIdentityProvider:
-            # Useful if doing grouping async requests with a shared identityprovider
+            # Useful if doing grouping async requests with a identityprovider
             #  and then spawning async call
             for checkdata in self._load_test_set_list():
-                if checkdata['data']['identity_provider'].lower() == withIdentityProvider.lower():
+                if checkdata['data'][
+                'identity_provider'].lower() == withIdentityProvider.lower():
                     # loaded_checks.append({'data': checkdata['data']})
                     loaded_checks.append(checkdata)
 
@@ -64,29 +166,42 @@ class ConfigObject(object):
         return loaded_checks
 
     def _load_config(self):
-        """ Return base config key """
+        """
+        Return base config key
+        """
         return self.config['config']
 
     def _load_config_identity_providers(self):
-        """ This fetches out a list of identity providers kwarg configs from main config """
+        """
+        This fetches out a list of identity providers kwarg configs
+        from main config
+        """
         providers = {}
-        for provider_config_alias, v in self._load_config()['identity_providers'].iteritems():
+
+        for provider_config_alias, v in self._load_config()[
+        'identity_providers'].iteritems():
             # Add each provider and config to dictionary from yaml file.
             providers[provider_config_alias] = v
         # Return a list of the config
         return providers
 
-        """ Loads a list of the checks """
-
     def _uniq(self, seq):
-        """ Returns a unique list when a list of
-         non unique items are put in """
+        """
+        Returns a unique list when a list of
+        non unique items are put in.
+
+        :return list:
+        """
         set = {}
         map(set.__setitem__, seq, [])
         return set.keys()
 
     def get_datatypes_list(self):
-        """ Used by the discover command to identify a list of valid datatypes """
+        """
+        Used by the discover command to identify a list of valid datatypes
+
+        :return str:
+        """
         exception_string = (
             "Error: Missing {error} under testSet item {test_set}, "
             "discover cannot run."
@@ -113,7 +228,7 @@ class ConfigObject(object):
                 )
                 raise Exception("KeyError: " + str(err) + str(error))
 
-            for element in testSet['data']['testElements']:  # For every test element
+            for element in testSet['data']['testElements']: #for every element
                 try:
                     datatypes = element['datatype'].split(',')
                 except KeyError as err:
@@ -128,16 +243,22 @@ class ConfigObject(object):
         return str(self._uniq(possible_datatypes))
 
     def get_log_level(self, debug_level=None):
-        """ Allow user-configurable log-leveling """
+        """
+        Allow user-configurable log-leveling
+        """
         try:
             if debug_level == None:
                 debug_level = self.config['config']['logging']['level']
         except KeyError as err:
-            print("Error: Missing " + str(err) +
-                  " in config under config: loglevel.\nTry config: loglevel: Exceptions")
+            print("Error: Missing {key} in config under config: loglevel.\n"
+                "Try config: loglevel: Exceptions".format(
+                    key=err)
+                )
             print("1")
             exit(1)
-        if (debug_level.lower().startswith('err') or debug_level.lower().startswith('exc')):
+        if (debug_level.lower().startswith('err') or
+            debug_level.lower().startswith('exc')
+            ):
             return logging.ERROR
         elif debug_level.lower().startswith('crit'):
             return logging.CRITICAL
@@ -151,36 +272,40 @@ class ConfigObject(object):
             return logging.ERROR
 
     def get_logger(self, loglevel):
-        """ Returns a logger instance, used throughout codebase.
-            This will set up a logger using syslog or file logging (or both)
-            depending on the setting used in configuration.
+        """
+        Returns a logger instance, used throughout codebase.
+        This will set up a logger using syslog or file logging (or both)
+        depending on the setting used in configuration.
 
-            This supports two types of logging options
-            One by file:
-              logging:
-                level: debug
-                outputs: file
-                logfile: /var/log/url_monitor.log
-                logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        This supports two types of logging options
+        One by file:
+          logging:
+            level: debug
+            outputs: file
+            logfile: /var/log/url_monitor.log
+            logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-            One by syslog:
-              logging:
-                level: debug
-                outputs: syslog
-                syslog:
-                    server: 127.0.0.1:514
-                    socket: tcp
-                logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        One by syslog:
+          logging:
+            level: debug
+            outputs: syslog
+            syslog:
+                server: 127.0.0.1:514
+                socket: tcp
+            logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-            You can also enable both by setting outputs with commas.
+        You can also enable both by setting outputs with commas.
         """
         try:  # Basic config lint
             self.config['config']['logging']['outputs']
             self.config['config']['logging']['level']
             self.config['config']['logging']['logformat']
         except KeyError, err:
-            error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
-                err=err)
+            error =  "KeyError missing {key} structure under config "
+            "property. Ensure `config: {err}:` is defined. Can't"
+            " continue.".format(
+                key=err
+                )
             logging.exception(error)
             exit(1)
 
@@ -197,8 +322,11 @@ class ConfigObject(object):
                 filehandler = logging.FileHandler(
                     self.config['config']['logging']['logfile'])
             except KeyError, err:
-                error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
-                    err=err)
+                error =  "KeyError missing {err} structure under config"
+                " property. Ensure `config: {err}:` is defined. Can't "
+                "continue.".format(
+                    err=err
+                    )
                 exit(1)
             filehandler.setLevel(loglevel)
             self.logger.addHandler(filehandler)
@@ -212,12 +340,17 @@ class ConfigObject(object):
                 self.config['config']['logging']['syslog']['server']
                 self.config['config']['logging']['syslog']['socket']
             except KeyError, err:
-                error =  """KeyError missing {err} structure under config property. Ensure `config: {err}:` is defined. Can't continue.""".format(
-                    err=err)
+                error =  "KeyError missing {err} structure under config "
+                "property. Ensure `config: {err}:` is defined. "
+                "Can't continue.".format(
+                    err=err
+                    )
                 logging.exception(error)
                 exit(1)
-            sysloghost = commons.get_hostport_tuple(dport=self.constant_syslog_port, dhost=self.config[
-                'config']['logging']['syslog']['server'])
+            sysloghost = commons.get_hostport_tuple(
+                dport=self.constant_syslog_port,
+                dhost=self.config['config']['logging']['syslog']['server']
+                )
 
             socktype = self.config['config']['logging']['syslog']['socket']
             if socktype == "tcp":
@@ -232,8 +365,12 @@ class ConfigObject(object):
                 self.logger.addHandler(sysloghandler)
                 sysloghandler.setFormatter(formatter)
             except socket.error, err:
-                error =  """Syslog error with socket.write() on host {h}:{p} {err}""".format(
-                    err=err, h=sysloghost[0], p=sysloghost[1])
+                error =  "Syslog error using socket.write() on host "
+                "{host}:{port} error: {err}".format(
+                    err=err,
+                    host=sysloghost[0],
+                    port=sysloghost[1]
+                    )
                 logging.exception(error)
 
         logging.basicConfig(level=loglevel)
@@ -241,46 +378,45 @@ class ConfigObject(object):
         return self.logger
 
     def pre_flight_check(self):
-        """ Trys loading all the config objects for zabbix conf. This can be expanded to do
-            all syntax checking in this config class, instead of in the program logic as it is
-            mostly right now.
+        """ 
+        Trys loading all the config objects for zabbix conf. This can be
+        expanded to do all syntax checking in this config class, instead of 
+        in the program logic as it is mostly right now.
 
-            It is a check class. This should NOT be used for program references.
-            (Doesnt use logger for exceptions as it pre-dates logger instanciation.)
-            """
+        It is a check class. This should NOT be used for program references.
+        (Doesnt use logger for exceptions as it pre-dates logger
+        instanciation.)
+        """
         # Ensure base config elements exist.
         try:
             self.config['config']
         except KeyError, err:
-            error =  """KeyError configs missing `zabbix: {err}` structure. Can't continue.""".format(
-                err=err)
+            error =  "KeyError configs missing `zabbix: {key}` structure."
+            " Can't continue.".format(
+                key=err
+                )
             logging.exception(error)
             exit(1)
 
         try:
             self.config['config']['zabbix']
         except KeyError, err:
-            error =  """KeyError configs missing `zabbix: {err}` structure. Can't continue.""".format(
-                err=err)
+            error =  "KeyError configs missing `zabbix: {key}` structure."
+            " Can't continue.".format(
+                key=err
+                )
             logging.exception(error)
             exit(1)
 
         try:
             self.config['config']['zabbix']['server']
             self.config['config']['zabbix']['host']
-            self.config['config']['zabbix']['send_timeout']
             self.config['config']['zabbix']['item_key_format']
         except KeyError, err:
-            error =  """KeyError configs missing `config: zabbix: {err}:` structure. Can't continue.""".format(
-                err=err)
-            logging.exception(error)
-            exit(1)
-
-        try:
-            self.config['config']['request_timeout']
-        except KeyError, err:
-            error =  """KeyError configs missing `config: config: {err}:` structure. (Default timeout missing) Can't continue.""".format(
-                err=err)
+            error =  "KeyError configs missing `config: zabbix: {key}:`"
+            " structure. Can't continue.".format(
+                key=err
+                )
             logging.exception(error)
             exit(1)
 
@@ -288,8 +424,9 @@ class ConfigObject(object):
         try:
             self.config['config']['identity_providers']
         except KeyError, err:
-            error =  """KeyError configs missing `config: config: {err}:` structure. (Identity Providers) Can't continue.""".format(
-                err=err)
+            error =  "KeyError configs missing `config: config: {key}:`"
+            " structure. (Identity Providers) Can't continue.".format(
+                key=err)
             logging.exception(error)
             exit(1)
 
@@ -297,14 +434,16 @@ class ConfigObject(object):
             for provider in self._load_config_identity_providers():
                 provider
         except AttributeError, err:
-            error =  """KeyError configs missing {err} structure in `config: identity_providers`. Can't continue.""".format(
-                err=err)
+            error =  "KeyError configs missing {key} structure in `config: "
+            "identity_providers`. Can't continue.".format(
+                key=err)
             logging.exception(error)
             exit(1)
 
         for provider in self._load_config_identity_providers():
             provider
-            for module, kwargs in self.config['config']['identity_providers'][provider].iteritems():
+            for module, kwargs in self.config['config'][
+            'identity_providers'][provider].iteritems():
                 module.split('/')
                 for kwarg in kwargs:
                     kwarg
