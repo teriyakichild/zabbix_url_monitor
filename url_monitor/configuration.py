@@ -387,6 +387,13 @@ class ConfigObject(object):
         (Doesnt use logger for exceptions as it pre-dates logger
         instanciation.)
         """
+        # Ensure pidfile defined
+        try:
+            self.config['config']['pidfile']
+        except KeyError:
+            logging.error("Error: `pidfile` not defined in yaml config")
+            exit(1)
+
         # Ensure base config elements exist.
         try:
             self.config['config']

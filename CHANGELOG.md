@@ -1,9 +1,15 @@
-## 2.0.1-1 (Oct 10 2016)
+## 2.1.0-1 (Oct 10 2016)
 
 Feature:
 
-  - pep updates (#21, @jonkelleyatrackspace)
-  - code refactoring and cleanup (#21, @jonkelleyatrackspace)
+  - add pidfile for run locking (#23, @jonkelleyatrackspace)
+
+## 2.0.1-1 (Oct 10 2016)
+
+Cleanup:
+
+  - pep updates (#23, @jonkelleyatrackspace)
+  - code refactoring and cleanup (#23, @jonkelleyatrackspace)
 
 ## 2.0.0-1 (Sep 19 2016)
 

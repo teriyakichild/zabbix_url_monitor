@@ -1,4 +1,5 @@
 config:
+  pidfile: /tmp/mylock.pid
   request_timeout: 30
   request_verify_ssl: true
   logging:

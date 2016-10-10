@@ -14,13 +14,15 @@ from exception import PidlockConflict
 import action
 import commons
 import configuration
+from exception import PidlockConflict
+
 import zbxsend as event
 from zbxsend import Metric
 
 from url_monitor import authors as authorsmacro
+from url_monitor import description as descriptionmacro
 from url_monitor import authors as emailsmacro
 from url_monitor import project as projectmacro
-from url_monitor import description as descriptionmacro
 
 __doc__ = """Program entry point / arg handling / check passfail review"""
 
@@ -113,7 +115,6 @@ def main(arguements=None):
     configinstance.pre_flight_check()
     config = configinstance.load()
 
-
     # establish single-run lockfile (pid)
     try:
         runlock = commons.AcquireRunLock(config['config']['pidfile'])
@@ -193,6 +194,9 @@ def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
     raise SystemExit(main(sys.argv))
 
+    # drop lockfile
+    if runlock.islocked():
+        runlock.release()
 
 if __name__ == "__main__":
     # do the UNIX double-fork magic, see Stevens' "Advanced

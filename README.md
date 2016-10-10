@@ -105,6 +105,19 @@ Running ``$ url_monitor discover`` will tell you which datatypes are available.
 <i class="icon-file"></i> Basic Configuration Options
 ------------------
 
+###  <i class="icon-book"></i>Pidfile
+
+For every configuration you write, you must define a unique pidfile
+(any unique string) for configurations to run with. This will allow one
+or more configurations to block if that pid filename exists. In this
+example, we give pidfile a unique value using a uuid with `uuidgen`.
+
+NOTE: Pidfiles are saved under ~/.url_monitor.d/<filename>
+
+    config:
+      pidfile: uuid78104271-39a1-4b33-a3bf-32658172238f.pid
+
+---
 ###  <i class="icon-book"></i>Network settings
 
 These define some settings for the requests HTTP library used to power the checks.

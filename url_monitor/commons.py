@@ -1,15 +1,66 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+
+try:
+    from daemon.pidlockfile import PIDLockFile
+except ImportError:
+    from daemon.pidfile import PIDLockFile
+import getpass
 import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
 from requests_oauthlib import OAuth1
+import os.path
 
+from exception import PidlockConflict
 from jpath import jpath
 
 
-class AuthException(Exception):
-    pass
+class AcquireRunLock(object):
+    """
+    Establishes a lockfile to avoid duplicate runs for same config.
+    """
+    def __init__(self, pidfile):
+        """
+        Create exclusive app lock
+        """
+        tmpdir = '/home/{0}/.url_monitor.d/'.format(getpass.getuser())
+        pidpath = "{tmp}{pid}".format(tmp=tmpdir, pid=pidfile)
+
+        # Check lockdir exists
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+
+        # Check for orphaned pids
+        if os.path.isfile(pidpath):
+            with open(pidpath) as f:
+                conflictpid = f.read()
+            raise PidlockConflict("process {0} has lock in {1}{2}".format(
+                    conflictpid.strip(), tmpdir, pidfile.strip()
+                    )
+                )
+
+        # Acquire lock
+        self.pidfile = PIDLockFile(pidpath)
+        self.locked = False
+        if not self.pidfile.is_locked():
+          self.pidfile.acquire()
+          self.locked = True
+
+    def release(self):
+        """
+        Releases exclusive lock
+        """
+        if self.pidfile.is_locked():
+          self.locked = False
+          return self.pidfile.release()
+
+    def islocked(self):
+        """
+        Return true if exclusively locked
+        """
+        return self.pidfile.is_locked()
 
 
 def get_hostport_tuple(dport, dhost):
