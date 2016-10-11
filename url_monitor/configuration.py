@@ -9,7 +9,9 @@ import sys
 import logging.handlers
 import commons
 
+import exception
 from url_monitor import package as packagemacro
+
 
 class ConfigObject(object):
     """ This class makes YAML configuration
@@ -66,7 +68,7 @@ class ConfigObject(object):
         # get identity_provider
         try:
             ts['data']['identity_provider'] = testSet['data'][
-            'identity_provider']
+                'identity_provider']
         except KeyError as err:
             # We're missing the uri aren't we?
             error = ("Error: Missing {err} under testSet item {item}, "
@@ -74,6 +76,117 @@ class ConfigObject(object):
             raise Exception("KeyError: " + str(err) + str(error))
 
         return ts
+
+    def get_skip_conditions(self):
+        """
+        Iterates through config: skip_run_when
+        and returns a dict of conditions to skip this program for.
+        This is to support if a zabbix node is a standby or not active master.
+        """
+        config = self.load()
+        config = config['config']
+
+        skip_conditions = []  # dict of skip conditions
+        config = config.get('skip_run_when')
+
+        # Skip if puppet fact exists
+        try:
+            facter = config.get('puppet_facter')
+        except NameError:
+            facter = False
+        if config and facter:
+            script = facter.get('script')
+            fact = facter.get('fact')
+            value = facter.get('value')
+
+            # assume facter in env $PATH since user doesnt know
+            if not script:
+                script = "facter"
+
+            if not fact:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "puppet_facter:\n\t\t\t"
+                    "fact: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not value:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "puppet_facter:\n\t\t\t"
+                    "value: <MISSING KEY>".expandtabs(2)
+                )
+
+            skip_conditions.append(
+                {"facter": (script, fact, value)}
+            )
+
+        # Skip if shell output result exists
+        try:
+            shell = config.get('shell')
+        except NameError:
+            shell = False
+        if config and shell:
+            script = shell.get('script')
+            stdout = shell.get('stdout')
+            code = shell.get('code')
+
+            if not script:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "shell:\n\t\t\t"
+                    "script: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not stdout:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "shell:\n\t\t\t"
+                    "stdout: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not code:
+                code = 0
+            else:
+                code = int(code)
+
+            skip_conditions.append(
+                {"shell": (script, stdout, code)}
+            )
+
+        # Skip if shell output result exists
+        try:
+            environment = config.get('environment')
+        except:
+            environment = False
+        if config and environment:
+            envkey = environment.get('variable')
+            shellvar = environment.get('value')
+
+            if not envkey:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "environment:\n\t\t\t"
+                    "variable: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not shellvar:
+                raise exception.RquiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "environment:\n\t\t\t"
+                    "value: <MISSING KEY>".expandtabs(2)
+                )
+            skip_conditions.append(
+                {"env": (envkey, shellvar)}
+            )
+
+        return skip_conditions
 
     def get_request_timeout(self, testSet):
         """
@@ -100,10 +213,10 @@ class ConfigObject(object):
             err = err
 
         if not defined:
-            error =  "KeyError configs missing `config: config: {err}:` "
+            error = "KeyError configs missing `config: config: {err}:` "
             "structure. (Default timeout missing) Can't continue.".format(
                 err=err
-                )
+            )
             logging.exception(error)
             exit(1)
         else:
@@ -131,7 +244,7 @@ class ConfigObject(object):
                 require_ssl = commons.string2bool(
                     config['config']['request_verify_ssl'])
         except:
-            require_ssl = True # No setting, secure by default.
+            require_ssl = True  # No setting, secure by default.
 
         return require_ssl
 
@@ -156,7 +269,7 @@ class ConfigObject(object):
             #  and then spawning async call
             for checkdata in self._load_test_set_list():
                 if checkdata['data'][
-                'identity_provider'].lower() == withIdentityProvider.lower():
+                        'identity_provider'].lower() == withIdentityProvider.lower():
                     # loaded_checks.append({'data': checkdata['data']})
                     loaded_checks.append(checkdata)
 
@@ -179,7 +292,7 @@ class ConfigObject(object):
         providers = {}
 
         for provider_config_alias, v in self._load_config()[
-        'identity_providers'].iteritems():
+                'identity_providers'].iteritems():
             # Add each provider and config to dictionary from yaml file.
             providers[provider_config_alias] = v
         # Return a list of the config
@@ -195,6 +308,77 @@ class ConfigObject(object):
         set = {}
         map(set.__setitem__, seq, [])
         return set.keys()
+
+    def datatypes_valid(self, check):
+        """
+        Lints datatypes out of the config file.
+
+        Return true if datatypes ok,
+        false if warnings occured.
+
+        :return str:
+        """
+
+        exception_string = (
+            "Error: Missing {error} under testSet item {test_set}, "
+            "check has been skipped."
+        )
+
+        for testSet in self._load_checks():
+            checkname = testSet['key']
+            if checkname == check:
+                try:
+                    uri = testSet['data']['uri']
+                except KeyError as err:
+                    error = exception_string.format(
+                        error=err,
+                        test_set=testSet['key']
+                    )
+                    logging.error("KeyError: " + str(err) + str(error))
+                    return False
+
+                try:
+                    testSet['data']['testElements']
+                except KeyError as err:
+                    error = exception_string.format(
+                        error=err,
+                        test_set=testSet['key']
+                    )
+                    logging.error("KeyError: " + str(err) + str(error))
+                    return False
+
+                for element in testSet['data']['testElements']:  # for every element
+                    try:
+                        datatypes = element['datatype'].split(',')
+                    except KeyError as err:
+                        error = exception_string.format(
+                            error=err,
+                            test_set=testSet['key']
+                        )
+                        logging.error("KeyError: " + str(err) + str(error))
+                        return False
+
+                    try:
+                        datatypes = element['response_type']
+                    except KeyError as err:
+                        error = exception_string.format(
+                            error=err,
+                            test_set=testSet['key']
+                        )
+                        logging.error("KeyError: " + str(err) + str(error))
+                        return False
+
+                    try:
+                        datatypes = element['key']
+                    except KeyError as err:
+                        error = exception_string.format(
+                            error=err,
+                            test_set=testSet['key']
+                        )
+                        logging.error("KeyError: " + str(err) + str(error))
+                        return False
+
+        return True
 
     def get_datatypes_list(self):
         """
@@ -218,6 +402,7 @@ class ConfigObject(object):
                     test_set=testSet['key']
                 )
                 raise Exception("KeyError: " + str(err) + str(error))
+                return 1
 
             try:
                 testSet['data']['testElements']
@@ -226,9 +411,10 @@ class ConfigObject(object):
                     error=err,
                     test_set=testSet['key']
                 )
-                raise Exception("KeyError: " + str(err) + str(error))
+                logging.error("KeyError: " + str(err) + str(error))
+                return 1
 
-            for element in testSet['data']['testElements']: #for every element
+            for element in testSet['data']['testElements']:  # for every element
                 try:
                     datatypes = element['datatype'].split(',')
                 except KeyError as err:
@@ -237,6 +423,7 @@ class ConfigObject(object):
                         test_set=testSet['key']
                     )
                     raise Exception("KeyError: " + str(err) + str(error))
+                    return 1
                 for datatype in datatypes:
                     possible_datatypes.append(datatype)
 
@@ -251,13 +438,13 @@ class ConfigObject(object):
                 debug_level = self.config['config']['logging']['level']
         except KeyError as err:
             print("Error: Missing {key} in config under config: loglevel.\n"
-                "Try config: loglevel: Exceptions".format(
-                    key=err)
-                )
+                  "Try config: loglevel: Exceptions".format(
+                      key=err)
+                  )
             print("1")
             exit(1)
         if (debug_level.lower().startswith('err') or
-            debug_level.lower().startswith('exc')
+                debug_level.lower().startswith('exc')
             ):
             return logging.ERROR
         elif debug_level.lower().startswith('crit'):
@@ -301,11 +488,11 @@ class ConfigObject(object):
             self.config['config']['logging']['level']
             self.config['config']['logging']['logformat']
         except KeyError, err:
-            error =  "KeyError missing {key} structure under config "
+            error = "KeyError missing {key} structure under config "
             "property. Ensure `config: {err}:` is defined. Can't"
             " continue.".format(
                 key=err
-                )
+            )
             logging.exception(error)
             exit(1)
 
@@ -322,11 +509,11 @@ class ConfigObject(object):
                 filehandler = logging.FileHandler(
                     self.config['config']['logging']['logfile'])
             except KeyError, err:
-                error =  "KeyError missing {err} structure under config"
+                error = "KeyError missing {err} structure under config"
                 " property. Ensure `config: {err}:` is defined. Can't "
                 "continue.".format(
                     err=err
-                    )
+                )
                 exit(1)
             filehandler.setLevel(loglevel)
             self.logger.addHandler(filehandler)
@@ -340,17 +527,17 @@ class ConfigObject(object):
                 self.config['config']['logging']['syslog']['server']
                 self.config['config']['logging']['syslog']['socket']
             except KeyError, err:
-                error =  "KeyError missing {err} structure under config "
+                error = "KeyError missing {err} structure under config "
                 "property. Ensure `config: {err}:` is defined. "
                 "Can't continue.".format(
                     err=err
-                    )
+                )
                 logging.exception(error)
                 exit(1)
             sysloghost = commons.get_hostport_tuple(
                 dport=self.constant_syslog_port,
                 dhost=self.config['config']['logging']['syslog']['server']
-                )
+            )
 
             socktype = self.config['config']['logging']['syslog']['socket']
             if socktype == "tcp":
@@ -365,12 +552,12 @@ class ConfigObject(object):
                 self.logger.addHandler(sysloghandler)
                 sysloghandler.setFormatter(formatter)
             except socket.error, err:
-                error =  "Syslog error using socket.write() on host "
+                error = "Syslog error using socket.write() on host "
                 "{host}:{port} error: {err}".format(
                     err=err,
                     host=sysloghost[0],
                     port=sysloghost[1]
-                    )
+                )
                 logging.exception(error)
 
         logging.basicConfig(level=loglevel)
@@ -398,20 +585,20 @@ class ConfigObject(object):
         try:
             self.config['config']
         except KeyError, err:
-            error =  "KeyError configs missing `zabbix: {key}` structure."
+            error = "KeyError configs missing `zabbix: {key}` structure."
             " Can't continue.".format(
                 key=err
-                )
+            )
             logging.exception(error)
             exit(1)
 
         try:
             self.config['config']['zabbix']
         except KeyError, err:
-            error =  "KeyError configs missing `zabbix: {key}` structure."
+            error = "KeyError configs missing `zabbix: {key}` structure."
             " Can't continue.".format(
                 key=err
-                )
+            )
             logging.exception(error)
             exit(1)
 
@@ -419,11 +606,12 @@ class ConfigObject(object):
             self.config['config']['zabbix']['server']
             self.config['config']['zabbix']['host']
             self.config['config']['zabbix']['item_key_format']
+            self.config['config']['zabbix']['checksummary_key_format']
         except KeyError, err:
-            error =  "KeyError configs missing `config: zabbix: {key}:`"
+            error = "KeyError configs missing `config: zabbix: {key}:`"
             " structure. Can't continue.".format(
                 key=err
-                )
+            )
             logging.exception(error)
             exit(1)
 
@@ -431,7 +619,7 @@ class ConfigObject(object):
         try:
             self.config['config']['identity_providers']
         except KeyError, err:
-            error =  "KeyError configs missing `config: config: {key}:`"
+            error = "KeyError configs missing `config: config: {key}:`"
             " structure. (Identity Providers) Can't continue.".format(
                 key=err)
             logging.exception(error)
@@ -441,7 +629,7 @@ class ConfigObject(object):
             for provider in self._load_config_identity_providers():
                 provider
         except AttributeError, err:
-            error =  "KeyError configs missing {key} structure in `config: "
+            error = "KeyError configs missing {key} structure in `config: "
             "identity_providers`. Can't continue.".format(
                 key=err)
             logging.exception(error)
@@ -450,7 +638,7 @@ class ConfigObject(object):
         for provider in self._load_config_identity_providers():
             provider
             for module, kwargs in self.config['config'][
-            'identity_providers'][provider].iteritems():
+                    'identity_providers'][provider].iteritems():
                 module.split('/')
                 for kwarg in kwargs:
                     kwarg

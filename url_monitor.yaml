@@ -1,46 +1,58 @@
 config:
-  pidfile: /tmp/mylock.pid
+  skip_run_when:
+    puppet_facter:
+      fact: "zabbix_ha_state"
+      value: "slave"
+    shell:
+      script: "/opt/get_zabbix_system_state_from_etcd.sh"
+      stdout: "standby"
+      code: 1
+    environment:
+      variable: "ZABBIX_HA_STATE"
+      value: "slave"
+  pidfile: url_monitor.pid
   request_timeout: 30
   request_verify_ssl: true
   logging:
-    level: debug
-    outputs: file,syslog
-    logfile: /var/log/url_monitor.log
+    level: "debug"
+    outputs: "file,syslog"
+    logfile: "/var/log/url_monitor.log"
     syslog:
-      server: 127.0.0.1
-      socket: udp
+      server: "127.0.0.1"
+      socket: "udp"
     logformat: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   identity_providers:
     basicAuthExampleProvider:
         HTTPBasicAuth:
-            username: ''
-            password: ''
+            username: ""
+            password: ""
     googleauthExampleProvider:
         oauthv1:
-            oauthv1-application-key: ''
-            oauthv1-application-secret: ''
-            oauthv1-oauth_token: ''
-            oauthv1-token_secet: ''
+            oauthv1-application-key: ""
+            oauthv1-application-secret: ""
+            oauthv1-oauth_token: ""
+            oauthv1-token_secet: ""
   zabbix:
-    host: api.net
-    server: localhost:10051
+    host: "zabbix-host.localdomain"
+    server: "localhost:10051"
     send_timeout: 15
     item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
+    checksummary_key_format: "url_monitor[EXECUTION_STATUS]"
 testSet:
   "jobStatsTotals":
-    uri: https://api.net/1.1/jobTotals
-    response_type: json
-    identity_provider: basicAuthExampleProvider
+    uri: "https://api.net/1.1/jobTotals"
+    response_type: "json"
+    identity_provider: "basicAuthExampleProvider"
     ok_http_code: 200
     request_timeout: 5
     testElements:
-      - key: Job.success
-        jsonvalue: ./jobSuccess
-        datatype: counter,string
-        metricname: jobSuccess
+      - key: "Job.success"
+        jsonvalue: "./jobSuccess"
+        datatype: "counter,string"
+        metricname: "jobSuccess"
         unit_of_measure: "events"
-      - key: Job.failure
-        jsonvalue: ./jobFailure
-        datatype: counter
-        metricname: jobFailure
+      - key: "Job.failure"
+        jsonvalue: "./jobFailure"
+        datatype: "counter"
+        metricname: "jobFailure"
         unit_of_measure: "events"

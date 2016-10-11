@@ -99,23 +99,65 @@ This will look in the config for all testSet items that have the datatype string
 
 Running ``$ url_monitor discover`` will tell you which datatypes are available.
 
-
-
-
 <i class="icon-file"></i> Basic Configuration Options
 ------------------
 
 ###  <i class="icon-book"></i>Pidfile
 
-For every configuration you write, you must define a unique pidfile
-(any unique string) for configurations to run with. This will allow one
-or more configurations to block if that pid filename exists. In this
-example, we give pidfile a unique value using a uuid with `uuidgen`.
+Every configuration should have a unique pidfile defined. This is especially
+important if you use multiple configuration files with the --config option to
+allow multiple concurrent executions.
 
 NOTE: Pidfiles are saved under ~/.url_monitor.d/<filename>
 
     config:
       pidfile: uuid78104271-39a1-4b33-a3bf-32658172238f.pid
+
+---
+###  <i class="icon-book"></i>Skip Checks When
+
+In enterprise environments, you may have a Zabbix node in hot-standby. This would be a node with zabbix systems turned off and ready in a recovery situation. (It would connect to a replicated HA db backend) If you run this plugin locally on both zabbix servers, you may need a reason to bypass running checks.
+
+You can check if plugin should skip execution based on puppet facts, shell script outputs, or the assignment of an environment variable.
+
+The checks below can be defined independently or all at once. Conditions can be defined at once or single.
+
+**Skip on Puppet Fact (using facter)**
+
+NOTE: The `script` value is optional, facter under $PATH is default.
+
+    config:
+      skip_run_when:
+        puppet_facter:
+          script: /usr/local/bin/facter
+          fact: zabbix_ha_state
+          value: slave
+
+This example skips execution if puppet-facter value for `zabbix_ha_state` returns 'slave'.
+
+**Skip on Shell Script Result **
+
+    config:
+      skip_run_when:
+        shell:
+          script: /opt/ha_status.sh
+          stdout: datacenter_standby
+          code: 1
+
+This will execute /opt/ha_status.sh and if the output is `datacenter_standby` or if the exit code is 1, the plugin will skip checks. 
+
+NOTE: You can define `stdout` and `code` conditions together or independently. Execution skips if either condtions evaluate.
+NOTE: The script feature cannot take arguements, this must be a path to a program or script with zero arguement values.
+
+**Skip on Environment Variable**
+
+    config:
+      skip_run_when:
+        environment:
+          variable: ZABBIX_HA_STATE
+          value: hot_spare
+
+This example skips execution if parent shell environment variable `ZABBIX_HA_STATE` is `hot_spare`.
 
 ---
 ###  <i class="icon-book"></i>Network settings

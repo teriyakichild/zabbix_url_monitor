@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import logging
+
 import commons
 
 from zbxsend import Metric
@@ -151,6 +152,10 @@ def check(testSet, configinstance, logger):
             check['api_response'] = api_res_value
             check['request_statuscode'] = response.status_code
             check['uri'] = testset['data']['uri']
+
+            # Determines the host of the uri
+            check['originhost'] = check['uri'].split("//")[-1].split("/")[0]
+
             try:
                 check['key']
             except KeyError as err:
@@ -244,4 +249,3 @@ def discover(args, configinstance, logger):
                     discovery_dict['data'].append(discoveryitem)
     # Print discovery dict.
     print(json.dumps(discovery_dict, indent=3))
-

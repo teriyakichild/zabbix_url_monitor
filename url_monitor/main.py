@@ -40,7 +40,7 @@ def return_epilog():
         footerline=str('-' * 72),
         project=projectmacro,
         authors='\n'.join(author_strings)
-        )
+    )
 
 
 def main(arguements=None):
@@ -73,7 +73,7 @@ def main(arguements=None):
         "--version",
         action='version',
         version='UNSUPPORTED OPTION'
-        )
+    )
     arg_parser.add_argument(
         "--key",
         "-k",
@@ -82,7 +82,7 @@ def main(arguements=None):
         help="Optional with `check` command. Can be used to run checks on"
         " a limited subset of item headings under testSet from the yaml "
         "config."
-        )
+    )
     arg_parser.add_argument(
         "--datatype",
         "-t",
@@ -91,14 +91,14 @@ def main(arguements=None):
         help="Required with `discover` command. This filters objects from"
         " the config that have a particular datatype. This data is used by"
         " low level discovery in Zabbix."
-        )
+    )
     arg_parser.add_argument(
         "-c",
         "--config",
         default=None,
         help="Specify custom config file, system default /etc/url_monitor."
         "yaml"
-        )
+    )
     arg_parser.add_argument(
         "--loglevel",
         default=None,
@@ -135,88 +135,78 @@ def main(arguements=None):
                 logger, condition, condition_args)
 
     if inputflag.COMMAND == "check":
-        failed_exits = []
+        completed_runs = []
         for thisscheck in config['checks']:
-            checkfailed = "0"
             try:
-                if inputflag.key != None and thisscheck['key'] == inputflag.key:
+                if (inputflag.key != None and
+                        thisscheck['key'] == inputflag.key):
                     # --key defined and name matched! only run 1 check
-                    print(action.check(
-                        thisscheck, configinstance, logger
-                    ))
-                    exit_val, checkobj = action.check(
+                    rc, checkobj = action.check(
                         thisscheck, configinstance, logger
                     )
-                    if exit_val > 0:
-                        checkfailed = "1"
-                        failed_exits.append({thisscheck['key']: checkobj})
+                    completed_runs.append(
+                        (
+                            rc,
+                            thisscheck['key'],
+                            checkobj
+                        )
+                    )
                 elif not inputflag.key:
                     # run all checks
-                    exit_val, checkobj = action.check(
+                    rc, checkobj = action.check(
                         thisscheck, configinstance, logger
                     )
-                    if exit_val > 0:
-                        checkfailed = "1"
-                        failed_exits.append({thisscheck['key']: checkobj})
+                    completed_runs.append(
+                        (
+                            rc,
+                            thisscheck['key'],
+                            checkobj
+                        )
+                    )
             except Exception as e:
                 logger.exception(e)
 
-            # Report failed conditions to zabbix
-            logger.info(
-                "Sending execution summary to zabbix server as Metrics objects")
+        for check in completed_runs:
+            rc, name, values = check
+            if rc == 0:
+                set_rc = 0
+            else:
+                set_rc = 1
 
-            metrickey = config['config']['zabbix']['checksummary_key_format'].format(
-                **checkobj)
+        badmsg = "with errors    [FAIL]"
+        if set_rc == 0:
+            badmsg = "without errors    [ OK ]"
+        logger.info("Checks have completed {0}".format(badmsg))
 
-            check_completion_status = [
-                Metric(
-                    config['config']['zabbix']['host'], metrickey, checkfailed
-                )
-            ]
-            action.transmitfacade(
-                configinstance=config,
-                metrics=check_completion_status)
+        # Report final conditions to zabbix (so informational alerting can
+        # be built around failed script runs, exceptions, network errors,
+        # timeouts, etc)
+        logger.info(
+            "Sending execution summary to zabbix server as Metrics objects"
+        )
 
-        # report error(s) to stdout
-        if len(failed_exits) >= 1:
-            logger.warn("{0} checks have failed".format(len(failed_exits)))
-            set_rc = 2
-        else:
-            logger.warn("All checks completed".format(len(failed_exits)))
-            set_rc = 0
+        metrickey = config['config']['zabbix'][
+            'checksummary_key_format'].format(**values)
+
+        check_completion_status = [Metric(
+            config['config']['zabbix']['host'], metrickey, set_rc
+        )]
+        action.transmitfacade(config, check_completion_status)
+
     elif inputflag.COMMAND == "discover":
         action.discover(inputflag, configinstance, logger)
         set_rc = 0
 
+    # drop lockfile
+    if runlock.islocked():
+        runlock.release()
+        print(set_rc)
+        exit(set_rc)
 
 
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
     raise SystemExit(main(sys.argv))
 
-    # drop lockfile
-    if runlock.islocked():
-        runlock.release()
-
 if __name__ == "__main__":
-    # do the UNIX double-fork magic, see Stevens' "Advanced
-    # Programming in the UNIX Environment" for details (ISBN 0201563177)
-    pid = os.fork()
-    if pid > 0:
-        # exit first parent
-        sys.exit(0)
-
-    # decouple from parent environment
-    os.chdir("/")
-    os.setsid()
-    os.umask(0)
-
-    # do second fork
-    pid = os.fork()
-    if pid > 0:
-        # exit from second parent, print eventual PID before
-        print("Daemon PID %d" % pid)
-        sys.exit(0)
-
-    # start the daemon main loop
     entry_point()
