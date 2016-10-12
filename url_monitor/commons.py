@@ -7,7 +7,6 @@ try:
 except ImportError:
     from daemon.pidfile import PIDLockFile
 from facter import Facter
-import getpass
 import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
@@ -36,7 +35,7 @@ def run_command(command):
 def skip_on_external_condition(logging, condition, argv):
     """
     Checks and skips execution if a shell command, env var, or puppet fact
-    returns a speicfic value.
+    returns true if we should skip
     """
     skip_summary = ", skipping execution due to config option."
     if condition == "facter":
@@ -47,16 +46,14 @@ def skip_on_external_condition(logging, condition, argv):
         facter = Facter(facter_path=facter_binpath)
         real_value = facter.get(fact_condition)
         if value_condition == real_value:
-            if facter_binpath != "facter":
-                facter_binpath = facter_binpath
-            logging.warn("Warning: {bin} returned \"{fact}\" => \"{val}\","
+            logging.warn("Warning: {bin} value {{:{fact} => \"{val}\"}},"
                          " skipping execution due to config option.".format(
                              bin=facter_binpath,
                              fact=fact_condition,
                              val=value_condition
                          )
                          )
-            exit(1)
+            return True
 
     elif condition == "shell":
         script = argv[0]
@@ -73,7 +70,7 @@ def skip_on_external_condition(logging, condition, argv):
                              fin=skip_summary
                          )
                          )
-            exit(1)
+            return True
         if expect_code == rc:
             logging.warn("Warning: shell `{sh}` return code"
                          " was `{code}`{fin}".format(
@@ -82,7 +79,7 @@ def skip_on_external_condition(logging, condition, argv):
                              fin=skip_summary
                          )
                          )
-            exit(1)
+            return True
     elif condition == "env":
         shellvar = argv[0]
         expected_value = argv[1]
@@ -95,8 +92,8 @@ def skip_on_external_condition(logging, condition, argv):
                              fin=skip_summary
                          )
                          )
-            exit(1)
-    return
+            return True
+    return False
 
 
 class AcquireRunLock(object):
@@ -108,19 +105,26 @@ class AcquireRunLock(object):
         """
         Create exclusive app lock
         """
-        tmpdir = '/home/{0}/.url_monitor.d/'.format(getpass.getuser())
-        pidpath = "{tmp}{pid}".format(tmp=tmpdir, pid=pidfile)
+        if pidfile.startswith("/"):
+            piddir = os.path.dirname(pidfile)
+            pidpath = pidfile  # use explicit path
+        else:
+            piddir = "/var/lib/zabbixsrv/"
+            pidpath = "{dir}{file}".format(dir=piddir, file=pidfile)
 
         # Check lockdir exists
-        if not os.path.exists(tmpdir):
-            os.makedirs(tmpdir)
+        if not os.path.exists(piddir):
+            raise PidlockConflict("directory {0} is missing or insufficient permission".format(
+                piddir
+            )
+            )
 
         # Check for orphaned pids
         if os.path.isfile(pidpath):
             with open(pidpath) as f:
                 conflictpid = f.read()
-            raise PidlockConflict("process {0} has lock in {1}{2}".format(
-                conflictpid.strip(), tmpdir, pidfile.strip()
+            raise PidlockConflict("process {0} has lock in {1}".format(
+                conflictpid.strip(), pidpath
             )
             )
 
@@ -320,15 +324,16 @@ class WebCaller(object):
             for potential_breach, unfiltered_input in auth_kwargs.iteritems():
                 if potential_breach in LOGGING_BLACKLIST:
                     filtered_kwargs[potential_breach] = "****FILTERED****"
-                else: # not in blacklist
+                else:  # not in blacklist
                     filtered_kwargs[potential_breach] = unfiltered_input
 
             # Debug message
-            self.logging.debug("{session} with kwargs {args} ".format(
-                session=self.session.auth,
-                args=filtered_kwargs
-            )
-            )
+            self.logging.debug("Spawn session.auth {pyobject}"
+                               " with kwargs {arglst} ".format(
+                                   pyobject=self.session.auth,
+                                   arglst=filtered_kwargs
+                               )
+                               )
 
     def run(self, config, url, verify, expected_http_status, identity_provider,
             timeout):
@@ -343,20 +348,35 @@ class WebCaller(object):
         :param timeout:
         :return:
         """
-        self.logging.debug("New request with headers"
-                           "{head} at url {url} ".format(
-                               head=self.session_headers,
-                               url=url
-                           )
-                           )
 
         self.auth(config, identity_provider)
-        request = self.session.get(
-            url,
-            headers=self.session_headers,
-            verify=verify,
-            timeout=timeout
-        )
+
+        try:
+            request = self.session.get(
+                url,
+                headers=self.session_headers,
+                verify=verify,
+                timeout=timeout
+            )
+            self.logging.debug("Spawn request {pyobject} url={url}"
+                               " headers={head}".format(
+                                   pyobject=request,
+                                   head=self.session_headers,
+                                   url=url
+                               )
+                               )
+        except requests.exceptions.ConnectTimeout as e:
+            err = "requests.exceptions.ConnectTimeout: {e}".format(e=e)
+            self.logging.exception(err)
+            return False
+        except requests.exceptions.RequestException as e:
+            err = "requests.exceptions.RequestException: {e}".format(e=e)
+            self.logging.exception(err)
+            return False
+        except:
+            err = "Unhandled requests exception occured during web_request()"
+            self.logging.exception(err)
+            return False
 
         # Turns comma seperated string from config to a list, then lower it
         expected_codes = [c.lower() for c in expected_http_status.split(',')]
@@ -390,5 +410,6 @@ class WebCaller(object):
                 expect=expected_codes,
                 got=resp_code
             )
-            self.logging.exception(error)
+            self.logging.error(error)
+            return False
         return request

@@ -8,13 +8,11 @@ import logging
 import os
 import sys
 import textwrap
-import requests
 from exception import PidlockConflict
 
 import action
 import commons
 import configuration
-from exception import PidlockConflict
 
 import zbxsend as event
 from zbxsend import Metric
@@ -43,20 +41,20 @@ def return_epilog():
     )
 
 
-def main(arguements=None):
+def main(arguments=None):
     """
     Program entry point.
 
-    :param arguements:
+    :param arguments:
     :return:
     """
     try:
-        if arguements is None:  # __name__=__main__
-            arguements = sys.argv[1:]
+        if arguments is None:  # __name__=__main__
+            arguments = sys.argv[1:]
             progname = sys.argv[0]
         else:  # module entry
-            arguements = arguements[1:]
-            progname = arguements[0]
+            arguments = arguments[1:]
+            progname = arguments[0]
     except IndexError:
         print(return_epilog() + "\n")
         logging.error("Invalid options. Use --help for more information.")
@@ -106,7 +104,7 @@ def main(arguements=None):
         " info, wrna, critical, error, exceptions]"
     )
 
-    inputflag = arg_parser.parse_args(args=arguements)
+    inputflag = arg_parser.parse_args(args=arguments)
 
     configinstance = configuration.ConfigObject()
     configinstance.load_yaml_file(inputflag.config)
@@ -115,9 +113,13 @@ def main(arguements=None):
     configinstance.pre_flight_check()
     config = configinstance.load()
 
+    # stage return code
+    set_rc = 0
+
     # establish single-run lockfile (pid)
     try:
-        runlock = commons.AcquireRunLock(config['config']['pidfile'])
+        if inputflag.COMMAND == "check":
+            runlock = commons.AcquireRunLock(config['config']['pidfile'])
     except PidlockConflict, err:
         logging.error("Error: Could not acquire exclusive "
                       "lock {0}".format(err))
@@ -125,14 +127,18 @@ def main(arguements=None):
         exit(1)
 
     # skip if skip conditions exist (for standby nodes)
-    conditional_skip_queue = configinstance.get_skip_conditions()
+    conditional_skip_queue = configinstance.skip_conditions
+    if inputflag.COMMAND == "discover":
+        conditional_skip_queue = []  # no need to disable this
     if len(conditional_skip_queue) > 0:
         logger.info("Checking {0} standby conditions to see if test execution"
                     " should skip.".format(len(conditional_skip_queue)))
     for test in conditional_skip_queue:
         for condition, condition_args in test.items():
-            commons.skip_on_external_condition(
-                logger, condition, condition_args)
+            if commons.skip_on_external_condition(
+                    logger, condition, condition_args):
+                runlock.release()
+                exit(0)
 
     if inputflag.COMMAND == "check":
         completed_runs = []
@@ -168,7 +174,7 @@ def main(arguements=None):
 
         for check in completed_runs:
             rc, name, values = check
-            if rc == 0:
+            if rc == 0 and set_rc == 0:
                 set_rc = 0
             else:
                 set_rc = 1
@@ -185,23 +191,31 @@ def main(arguements=None):
             "Sending execution summary to zabbix server as Metrics objects"
         )
 
-        metrickey = config['config']['zabbix'][
-            'checksummary_key_format'].format(**values)
+        if not values:  # Do you see uncaught requests.exceptions?
+            values = {'EXECUTION_STATUS': 1}  # trigger an alert
+
+        metrickey = config['config']['zabbix']['checksummary_key_format']
 
         check_completion_status = [Metric(
             config['config']['zabbix']['host'], metrickey, set_rc
         )]
-        action.transmitfacade(config, check_completion_status)
+
+        logger.debug("Summary: {0}".format(check_completion_status))
+        if not action.transmitfacade(config, check_completion_status):
+            logger.critical(
+                "Sending execution summary to zabbix server failed!")
+            set_rc = 1
 
     elif inputflag.COMMAND == "discover":
         action.discover(inputflag, configinstance, logger)
         set_rc = 0
 
-    # drop lockfile
-    if runlock.islocked():
-        runlock.release()
-        print(set_rc)
-        exit(set_rc)
+    # drop lockfile, then exit (if check mode is active)
+    if inputflag.COMMAND == "check":
+        print(set_rc)  # don't need print retcode in discover
+        if runlock.islocked():
+            runlock.release()
+            exit(set_rc)
 
 
 def entry_point():

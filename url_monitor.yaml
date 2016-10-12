@@ -1,16 +1,18 @@
 config:
   skip_run_when:
-    puppet_facter:
-      fact: "zabbix_ha_state"
-      value: "slave"
-    shell:
-      script: "/opt/get_zabbix_system_state_from_etcd.sh"
-      stdout: "standby"
-      code: 1
+# The two headings puppet_facter, or shell are optional conditions
+#  to skip a series of checks. Pick your favorite method here and uncomment it.
+#    puppet_facter:
+#      fact: "zabbix_ha_state"
+#      value: "slave"
+#    shell:
+#      script: "/opt/get_zabbix_system_state_from_etcd.sh"
+#      stdout: "standby"
+#      code: 1
     environment:
       variable: "ZABBIX_HA_STATE"
       value: "slave"
-  pidfile: url_monitor.pid
+  pidfile: "/var/lib/zabbixsrv/url_monitor.pid"
   request_timeout: 30
   request_verify_ssl: true
   logging:

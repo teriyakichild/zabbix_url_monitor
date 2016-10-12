@@ -1,22 +1,32 @@
 Table of Contents
 =================
 
+  * [Table of Contents](#table-of-contents)
   * [url_monitor](#url_monitor)
     * [Simple Installation](#simple-installation)
         * [Requirements](#requirements)
         * [Redhat install](#redhat-install)
         * [On other platforms](#on-other-platforms)
+        * [Setup](#setup)
+          * [Configuration](#configuration)
+          * [Scheduling](#scheduling)
+          * [Zabbix Template](#zabbix-template)
+          * [Zabbix Triggers](#zabbix-triggers)
     * [<i></i> Basic Command Options](#-basic-command-options)
     * [<i></i>  Simple Plugin Usage on the CLI](#--simple-plugin-usage-on-the-cli)
       * [Running a check](#running-a-check)
       * [Return low level discovery items](#return-low-level-discovery-items)
     * [<i></i> Basic Configuration Options](#-basic-configuration-options)
+      * [<i></i>Pidfile](#pidfile)
+      * [<i></i>Skip Checks When](#skip-checks-when)
+      * [<i></i>Network settings](#network-settings)
       * [<i></i>Log level](#log-level)
-      * [<i></i>Identity Providers](#identity-providers)
+      * [<i></i>Auth/Identity Providers](#authidentity-providers)
       * [<i></i>Example of of an API testSet configuration](#example-of-of-an-api-testset-configuration)
           * [Test Elements](#test-elements)
       * [<i></i>Zabbix host config](#zabbix-host-config)
           * [item_key_format details](#item_key_format-details)
+          * [checksummary_key_format details](#checksummary_key_format-details)
     * [<i></i>Complete Example](#complete-example)
       * [<i></i>Configure a webcheck in URL_monitor](#configure-a-webcheck-in-url_monitor)
       * [<i></i>Configure Zabbix UI](#configure-zabbix-ui)
@@ -30,10 +40,13 @@ Table of Contents
     * [<i></i>Development](#development)
     * [<i></i>Authors](#authors)
 
+
+
 url_monitor
 ==========
 
-It's a Zabbix plugin in Python that creates low level discovery items to monitor items/metrics in a JSON API. It supports multiple requests auth backends including oauth, basicauth, or your own custom requests auth  plugins. This plugin also reports metrics as items using the Zabbix_sender method supporting custom item key formats.
+This is a Zabbix plugin that creates items in Zabbix based off elements returned from an API.
+Isomg JSON paths from an API the Zabbix items can be used for monitoring the status of a REST resource. It supports multiple requests auth backends including oauth, basicauth, or your own custom requests auth  plugins. This plugin also reports metrics as items using the Zabbix_sender method supporting custom item key formats.
 
 Simple Installation
 ------------------
@@ -48,29 +61,57 @@ python-daemon does not work with py 2.6.6 in pip.
 #### On other platforms 
 `python setup.py install`
 
+#### Setup
+
+##### Configuration
+Copy url_monitor.yaml to /etc/url_monitor.yaml and change to your requriements. Consult the
+'Basic Configuration Options' below if you don't understand an option.
+
+##### Scheduling
+This Zabbix plugin is externally scheduled (due to the blocking nature of web requests)
+
+**Cron Settings**
+
+Create a file `/etc/cron.d/zabbix_url_monitor` with the following settings:
+
+    # .---------------- minute (0 - 59)
+    # |  .------------- hour (0 - 23)
+    # |  |  .---------- day of month (1 - 31)
+    # |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+    # |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+    # |  |  |  |  |
+    # *  *  *  *  * user-name command to be executed
+    */5 * * * * zabbix /usr/bin/url_monitor check --loglevel warning
+
+##### Zabbix Template
+You will need to import the Zabbix template in order to make the low-level discovery testSet items you have described in your configuration file.
+
+##### Zabbix Triggers
+Trigger creation through low level discovery is to be implemented (but is not currently.) These triggers will have to be manually created at this time.
+
 <i class="icon-keyboard"></i> Basic Command Options
 ------------------
-	usage: url_monitor [--help] [-h] [-V] [--key [KEY]] [--datatype [DATATYPE]] [-c CONFIG]
-	              COMMAND
-	
-	positional arguments:
-	  COMMAND
+  usage: url_monitor [--help] [-h] [-V] [--key [KEY]] [--datatype [DATATYPE]] [-c CONFIG]
+                COMMAND
+  
+  positional arguments:
+    COMMAND
 
     optional commands:
       check
       discover
-	
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  -V, --version         show program's version number and exit
-	  --key [KEY], -k [KEY]
-	                        Optional with `check` command. Can be used to run
-	                        checks on a limited subset of item headings under
-	                        testSet from the yaml config.
-	  --datatype [DATATYPE], -t [DATATYPE]
-	                        Required with `discover` command. This filters objects
-	                        from the config that have a particular datatype. This
-	                        data is used by low level discovery in Zabbix.
+  
+  optional arguments:
+    -h, --help            show this help message and exit
+    -V, --version         show program's version number and exit
+    --key [KEY], -k [KEY]
+                          Optional with `check` command. Can be used to run
+                          checks on a limited subset of item headings under
+                          testSet from the yaml config.
+    --datatype [DATATYPE], -t [DATATYPE]
+                          Required with `discover` command. This filters objects
+                          from the config that have a particular datatype. This
+                          data is used by low level discovery in Zabbix.
       -c [CONFIG], --config [CONFIG]
                             Specify custom config file, system default
                             /etc/url_monitor.yaml
@@ -108,10 +149,11 @@ Every configuration should have a unique pidfile defined. This is especially
 important if you use multiple configuration files with the --config option to
 allow multiple concurrent executions.
 
-NOTE: Pidfiles are saved under ~/.url_monitor.d/<filename>
+NOTE: Pidfiles are saved under /var/lib/zabbixsrv/<filename> by default if a full
+path is not supplied for saving the pid.
 
     config:
-      pidfile: uuid78104271-39a1-4b33-a3bf-32658172238f.pid
+      pidfile: /var/lib/zabbixsrv/uuid78104271-39a1-4b33-a3bf-32658172238f.pid
 
 ---
 ###  <i class="icon-book"></i>Skip Checks When
@@ -135,7 +177,7 @@ NOTE: The `script` value is optional, facter under $PATH is default.
 
 This example skips execution if puppet-facter value for `zabbix_ha_state` returns 'slave'.
 
-**Skip on Shell Script Result **
+**Skip on Shell Script Result**
 
     config:
       skip_run_when:
@@ -168,7 +210,7 @@ The requests_verify_ssl value must be true/false or a path to a SSL cert chain.
 
     config:
       request_timeout: 30
-          request_verify_ssl: true
+      request_verify_ssl: true
 
 ---
 ###  <i class="icon-book"></i>Log level
@@ -304,29 +346,37 @@ This controls where your Zabbix metrics are sent for collection.
         host: api.net
         server: localhost:10051
         item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]" 
-
+        checksummary_key_format: "url_monitor[EXECUTION_STATUS]"
 
 ##### item_key_format details
 
 The `item_key_format` is the key format that should match your item prototype syntax in Zabbix UI.
 
-Template substitution of variables are supported by the `{` and `}` characters, variables can be any key name within your `testElements` (see testSet configuration above) or can be one of two built-ins.
+Template substitution of variables are supported by the `{` and `}` characters, variables can be any key name you have defined within your `testElements` (see testSet configuration above) or can be one of the following built-ins.
 
-> **Config Key Reference:**
+> **Built-in Formatting Substitutes**
 >
 > **`{datatype}`** - Which is inherantly derived frm the datatype(s) defined in your testSet: testElements configuration. Probably a `string`, `counter` or `integer`
 > 
 > **`{uri}`** - The URI of test to be conducted which may be useful to pass to Zabbix also inherantly derived frm the uri defined in your testSet configuration
+>
+> **`{originhost}`** - The domain name of the API you are running a check on.
+>
+> **`{api_response}`** - The value of the HTTP response
+>
+> **`{request_statuscode}`** - The value of the HTTP status
 
+##### checksummary_key_format details
 
+At the end of all checks run in a configuration, a final Zabbix item is updated called EXECUTION status. The item key is defined as `checksummary_key_format`. You can monitor this key under your Zabbix host to determine if any checks have failed during the script execution.
 
 <i class="icon-file"></i>Complete Example
 ------------------
 ###<i class="icon-book"></i>Configure a webcheck in URL_monitor
 Assume you have a web service at localhost serving a status page like this JSON blob below
 
-	$ curl http://localhost:8888/status
-	{"elements": [0, 1, 2], "api_status": {"mongo": "failed", "schedulerErrorCounts": 1461869481}}
+  $ curl http://localhost:8888/status
+  {"elements": [0, 1, 2], "api_status": {"mongo": "failed", "schedulerErrorCounts": 1461869481}}
 
 You could write the following test expressions in your configuration to create Zabbix items out of pieces of information in your API response.
 
@@ -359,32 +409,32 @@ testSet:
 
 
 Then when you run the check you will see the following output (in debug mode)
-	
-	$ python url_monitor/main.py check -k exampleAPI --loglevel debug
-	INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): localhost
-	DEBUG:requests.packages.urllib3.connectionpool:"GET /status HTTP/1.1" 200 94
-	DEBUG:root:Zabbix host localhost port 10051
-	DEBUG:zbxsender:Sent payload: ZBXD�{
-		"request":"sender data",
-		"data":[
-			{
-				"host":"url_monitor",
-				"key":"url_monitor[string, api_status_for_mongo, http://localhost:8888/status]",
-				"value":"failed",
-				"clock":1461869579.57},
-			{
-				"host":"url_monitor",
-				"key":"url_monitor[integer, schedulerErrorCounts, http://localhost:8888/status]",
-				"value":1461869579,
-				"clock":1461869579.57},
-			{
-				"host":"url_monitor",
-				"key":"url_monitor[integer, thing, http://localhost:8888/status]",
-				"value":0,
-				"clock":1461869579.57}]
-	}
-	DEBUG:zbxsender:Got response from Zabbix: {u'info': u'processed: 3; failed: 0; total: 3; seconds spent: 0.000064', u'response': u'success'}
-	INFO:zbxsender:processed: 3; failed: 0; total: 3; seconds spent: 0.000064
+  
+  $ python url_monitor/main.py check -k exampleAPI --loglevel debug
+  INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): localhost
+  DEBUG:requests.packages.urllib3.connectionpool:"GET /status HTTP/1.1" 200 94
+  DEBUG:root:Zabbix host localhost port 10051
+  DEBUG:zbxsender:Sent payload: ZBXD�{
+    "request":"sender data",
+    "data":[
+      {
+        "host":"url_monitor",
+        "key":"url_monitor[string, api_status_for_mongo, http://localhost:8888/status]",
+        "value":"failed",
+        "clock":1461869579.57},
+      {
+        "host":"url_monitor",
+        "key":"url_monitor[integer, schedulerErrorCounts, http://localhost:8888/status]",
+        "value":1461869579,
+        "clock":1461869579.57},
+      {
+        "host":"url_monitor",
+        "key":"url_monitor[integer, thing, http://localhost:8888/status]",
+        "value":0,
+        "clock":1461869579.57}]
+  }
+  DEBUG:zbxsender:Got response from Zabbix: {u'info': u'processed: 3; failed: 0; total: 3; seconds spent: 0.000064', u'response': u'success'}
+  INFO:zbxsender:processed: 3; failed: 0; total: 3; seconds spent: 0.000064
 
 
 --- 

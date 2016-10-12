@@ -13,9 +13,10 @@ import exception
 from url_monitor import package as packagemacro
 
 
-class ConfigObject(object):
-    """ This class makes YAML configuration
-    available as python datastructure. """
+class baseConfig():
+    """
+    Base class for ConfigObject
+    """
 
     def __init__(self):
         self.config = None
@@ -24,9 +25,9 @@ class ConfigObject(object):
 
     def load_yaml_file(self, config=None):
         """
-
-        :param config:
-        :return:
+        Loads a yaml file as a dict
+        :param config: yaml file
+        :return: dict
         """
         if config == None:
             config = "/etc/url_monitor.yaml"
@@ -39,14 +40,241 @@ class ConfigObject(object):
                 print("Exception: YAML Parse Error!\n{exc}".format(exc=exc))
                 sys.exit(1)
 
+    def load(self):
+        """ This is the main config load function to pull in
+            configurations to convienent and common namespace.
+        """
+        return {'checks': self._load_checks(),
+                'config': self.raw,
+                'identity_providers': self.identity_providers}
+
+    def _load_checks(self, withIdentityProvider=None):
+        """ Loads the checks for work to be run.
+            Default loads all checks, withIdentityProvider option will limit
+            checks returned by identity provider (useful for smart async
+            request grouping)
+        """
+        loaded_checks = []
+
+        if withIdentityProvider:
+            # Useful if doing grouping async requests with a identityprovider
+            #  and then spawning async call
+            for checkdata in self.test_sets:
+                if checkdata['data'][
+                        'identity_provider'].lower() == withIdentityProvider.lower():
+                    # loaded_checks.append({'data': checkdata['data']})
+                    loaded_checks.append(checkdata)
+
+        else:
+            loaded_checks = self.test_sets
+
+        return loaded_checks
+
+    def _uniq(self, seq):
+        """
+        Returns a unique list when a list of
+        non unique items are put in.
+
+        :return list:
+        """
+        set = {}
+        map(set.__setitem__, seq, [])
+        return set.keys()
+
+
+class configProperties():
+    """
+    Contains property methods to help out ConfigObject
+    """
+    @property
+    def raw(self):
+        """
+        Return base config
+        """
+        return self.config['config']
+
+    @property
+    def identity_providers(self):
+        """
+        This fetches out a list of identity providers kwarg configs
+        from main config
+        """
+        providers = {}
+
+        for provider_config_alias, v in self.raw[
+                'identity_providers'].iteritems():
+            # Add each provider and config to dictionary from yaml file.
+            providers[provider_config_alias] = v
+        # Return a list of the config
+        return providers
+
+    @property
+    def test_sets(self):
+        """ Used to prepare format of data for the checker functions.
+
+        [
+            {
+                  "data": {
+                       "identity_provider": "None",
+                       "testElements": [
+                            {
+                                 "datatype": "string",
+                                 "jsonvalue": "./value/to/look/for[0]",
+                                 "unit_of_measure": "events",
+                                 "key": "zabbix_key",
+                                 "metricname": "a friendly name"
+                            },
+                       ],
+                       "response_type": "json",
+                       "ok_http_code": 200,
+                       "uri": "https://localhost"
+                  },
+                  "key": "testSetName"
+             },
+             {
+                  "data": {
+                       "identity_provider": "my_identity_alias
+                       "testElements": [
+                            {
+                                 "datatype": "string",
+                                 "jsonvalue": "./value/to/look/for[1]",
+                                 "unit_of_measure": "events",
+                                 "key": "zabbix_key",
+                                 "metricname": "a friendly name"
+                            },
+                       ],
+                       "response_type": "json",
+                       "ok_http_code": 200,
+                       "uri": "https://localhost"
+                  },
+                  "key": "testSetName2"
+             }
+        ]
+        """
+
+        checks = []
+        for k, v in self.config['testSet'].iteritems():
+            checks.append({'key': k, 'data': v})
+
+        return checks
+
+    @property
+    def skip_conditions(self):
+        """
+        Returns a parsed list of skippable conditions from the configuration
+        file. This is used with the skip_run_when feature.
+
+        returns a list.
+        """
+        config = self.load()
+        config = config['config']
+
+        skip_conditions = []  # dict of skip conditions
+        config = config.get('skip_run_when')
+
+        # Skip if puppet fact exists
+        facter = config.get('puppet_facter', False)
+
+        if config and facter:
+            script = facter.get('script')
+            fact = facter.get('fact')
+            value = facter.get('value')
+
+            # assume facter in env $PATH since user doesnt know
+            if not script:
+                script = "facter"
+
+            if not fact:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "puppet_facter:\n\t\t\t"
+                    "fact: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not value:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "puppet_facter:\n\t\t\t"
+                    "value: <MISSING KEY>".expandtabs(2)
+                )
+
+            skip_conditions.append(
+                {"facter": (script, fact, value)}
+            )
+
+        # Skip if shell output result exists
+        shell = config.get('shell', False)
+        if config and shell:
+            script = shell.get('script')
+            stdout = shell.get('stdout')
+            code = shell.get('code')
+
+            if not script:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "shell:\n\t\t\t"
+                    "script: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not stdout:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "shell:\n\t\t\t"
+                    "stdout: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not code:
+                code = 0
+            else:
+                code = int(code)
+
+            skip_conditions.append(
+                {"shell": (script, stdout, code)}
+            )
+
+        # Skip if shell output result exists
+        environment = config.get('environment', False)
+        if config and environment:
+            envkey = environment.get('variable')
+            shellvar = environment.get('value')
+
+            if not envkey:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "environment:\n\t\t\t"
+                    "variable: <MISSING KEY>".expandtabs(2)
+                )
+
+            if not shellvar:
+                raise exception.RequiredConfigMissing(
+                    "config:\n\t"
+                    "skip_run_when:\n\t\t"
+                    "environment:\n\t\t\t"
+                    "value: <MISSING KEY>".expandtabs(2)
+                )
+            skip_conditions.append(
+                {"env": (envkey, shellvar)}
+            )
+
+        return skip_conditions
+
+
+class ConfigObject(baseConfig, configProperties):
+    """ This class makes YAML configuration
+    available as python datastructure. """
+
     def get_test_set(self, testSet):
         """
         return specific values of interest from a test set
 
         :return dict:
         """
-        ts = {}
-        ts['data'] = {}
+        ts = {'data': {}}
         # get uri
         try:
             ts['data']['uri'] = testSet['data']['uri']
@@ -76,117 +304,6 @@ class ConfigObject(object):
             raise Exception("KeyError: " + str(err) + str(error))
 
         return ts
-
-    def get_skip_conditions(self):
-        """
-        Iterates through config: skip_run_when
-        and returns a dict of conditions to skip this program for.
-        This is to support if a zabbix node is a standby or not active master.
-        """
-        config = self.load()
-        config = config['config']
-
-        skip_conditions = []  # dict of skip conditions
-        config = config.get('skip_run_when')
-
-        # Skip if puppet fact exists
-        try:
-            facter = config.get('puppet_facter')
-        except NameError:
-            facter = False
-        if config and facter:
-            script = facter.get('script')
-            fact = facter.get('fact')
-            value = facter.get('value')
-
-            # assume facter in env $PATH since user doesnt know
-            if not script:
-                script = "facter"
-
-            if not fact:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "puppet_facter:\n\t\t\t"
-                    "fact: <MISSING KEY>".expandtabs(2)
-                )
-
-            if not value:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "puppet_facter:\n\t\t\t"
-                    "value: <MISSING KEY>".expandtabs(2)
-                )
-
-            skip_conditions.append(
-                {"facter": (script, fact, value)}
-            )
-
-        # Skip if shell output result exists
-        try:
-            shell = config.get('shell')
-        except NameError:
-            shell = False
-        if config and shell:
-            script = shell.get('script')
-            stdout = shell.get('stdout')
-            code = shell.get('code')
-
-            if not script:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "shell:\n\t\t\t"
-                    "script: <MISSING KEY>".expandtabs(2)
-                )
-
-            if not stdout:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "shell:\n\t\t\t"
-                    "stdout: <MISSING KEY>".expandtabs(2)
-                )
-
-            if not code:
-                code = 0
-            else:
-                code = int(code)
-
-            skip_conditions.append(
-                {"shell": (script, stdout, code)}
-            )
-
-        # Skip if shell output result exists
-        try:
-            environment = config.get('environment')
-        except:
-            environment = False
-        if config and environment:
-            envkey = environment.get('variable')
-            shellvar = environment.get('value')
-
-            if not envkey:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "environment:\n\t\t\t"
-                    "variable: <MISSING KEY>".expandtabs(2)
-                )
-
-            if not shellvar:
-                raise exception.RquiredConfigMissing(
-                    "config:\n\t"
-                    "skip_run_when:\n\t\t"
-                    "environment:\n\t\t\t"
-                    "value: <MISSING KEY>".expandtabs(2)
-                )
-            skip_conditions.append(
-                {"env": (envkey, shellvar)}
-            )
-
-        return skip_conditions
 
     def get_request_timeout(self, testSet):
         """
@@ -248,67 +365,6 @@ class ConfigObject(object):
 
         return require_ssl
 
-    def load(self):
-        """ This is the main config load function to pull in
-            configurations to convienent and common namespace.
-        """
-        return {'checks': self._load_checks(),
-                'config': self._load_config(),
-                'identity_providers': self._load_config_identity_providers()}
-
-    def _load_checks(self, withIdentityProvider=None):
-        """ Loads the checks for work to be run.
-            Default loads all checks, withIdentityProvider option will limit
-            checks returned by identity provider (useful for smart async
-            request grouping)
-        """
-        loaded_checks = []
-
-        if withIdentityProvider:
-            # Useful if doing grouping async requests with a identityprovider
-            #  and then spawning async call
-            for checkdata in self._load_test_set_list():
-                if checkdata['data'][
-                        'identity_provider'].lower() == withIdentityProvider.lower():
-                    # loaded_checks.append({'data': checkdata['data']})
-                    loaded_checks.append(checkdata)
-
-        else:
-            loaded_checks = self._load_test_set_list()
-
-        return loaded_checks
-
-    def _load_config(self):
-        """
-        Return base config key
-        """
-        return self.config['config']
-
-    def _load_config_identity_providers(self):
-        """
-        This fetches out a list of identity providers kwarg configs
-        from main config
-        """
-        providers = {}
-
-        for provider_config_alias, v in self._load_config()[
-                'identity_providers'].iteritems():
-            # Add each provider and config to dictionary from yaml file.
-            providers[provider_config_alias] = v
-        # Return a list of the config
-        return providers
-
-    def _uniq(self, seq):
-        """
-        Returns a unique list when a list of
-        non unique items are put in.
-
-        :return list:
-        """
-        set = {}
-        map(set.__setitem__, seq, [])
-        return set.keys()
-
     def datatypes_valid(self, check):
         """
         Lints datatypes out of the config file.
@@ -323,7 +379,6 @@ class ConfigObject(object):
             "Error: Missing {error} under testSet item {test_set}, "
             "check has been skipped."
         )
-
         for testSet in self._load_checks():
             checkname = testSet['key']
             if checkname == check:
@@ -444,8 +499,8 @@ class ConfigObject(object):
             print("1")
             exit(1)
         if (debug_level.lower().startswith('err') or
-                debug_level.lower().startswith('exc')
-            ):
+                    debug_level.lower().startswith('exc')
+                ):
             return logging.ERROR
         elif debug_level.lower().startswith('crit'):
             return logging.CRITICAL
@@ -626,7 +681,7 @@ class ConfigObject(object):
             exit(1)
 
         try:
-            for provider in self._load_config_identity_providers():
+            for provider in self.identity_providers:
                 provider
         except AttributeError, err:
             error = "KeyError configs missing {key} structure in `config: "
@@ -635,7 +690,7 @@ class ConfigObject(object):
             logging.exception(error)
             exit(1)
 
-        for provider in self._load_config_identity_providers():
+        for provider in self.identity_providers:
             provider
             for module, kwargs in self.config['config'][
                     'identity_providers'][provider].iteritems():
@@ -645,58 +700,10 @@ class ConfigObject(object):
 
         self.logger.info("Pre-flight config test OK")
 
-    def _load_test_set_list(self):
-        """ Used to prepare format of data for the checker functions.
-
-        [
-            {
-                  "data": {
-                       "identity_provider": "None",
-                       "testElements": [
-                            {
-                                 "datatype": "string",
-                                 "jsonvalue": "./value/to/look/for[0]",
-                                 "unit_of_measure": "events",
-                                 "key": "zabbix_key",
-                                 "metricname": "a friendly name"
-                            },
-                       ],
-                       "response_type": "json",
-                       "ok_http_code": 200,
-                       "uri": "https://localhost"
-                  },
-                  "key": "testSetName"
-             },
-             {
-                  "data": {
-                       "identity_provider": "my_identity_alias
-                       "testElements": [
-                            {
-                                 "datatype": "string",
-                                 "jsonvalue": "./value/to/look/for[1]",
-                                 "unit_of_measure": "events",
-                                 "key": "zabbix_key",
-                                 "metricname": "a friendly name"
-                            },
-                       ],
-                       "response_type": "json",
-                       "ok_http_code": 200,
-                       "uri": "https://localhost"
-                  },
-                  "key": "testSetName2"
-             }
-        ]
-        """
-
-        checks = []
-        for k, v in self.config['testSet'].iteritems():
-            checks.append({'key': k, 'data': v})
-
-        return checks
 
 if __name__ == "__main__":
     x = ConfigObject()
     x.load_yaml_file(config=None)
-    a = x._load_checks()
+    a = x.checks
     print(a)
     print(x.get_datatypes_list())
