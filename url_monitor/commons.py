@@ -308,9 +308,25 @@ class WebCaller(object):
 
             # Set the external auth handler.
             self.session.auth = external_requests_auth_class(**auth_kwargs)
+
+            # Filters possibly exposing kwargs from debug logs
+            LOGGING_BLACKLIST = [
+                'password',
+                'extra_auth_data',
+                'oauthv1-application-secret',
+                'oauthv1-token_secet'
+            ]
+            filtered_kwargs = {}
+            for potential_breach, unfiltered_input in auth_kwargs.iteritems():
+                if potential_breach in LOGGING_BLACKLIST:
+                    filtered_kwargs[potential_breach] = "****FILTERED****"
+                else: # not in blacklist
+                    filtered_kwargs[potential_breach] = unfiltered_input
+
+            # Debug message
             self.logging.debug("{session} with kwargs {args} ".format(
                 session=self.session.auth,
-                args=auth_kwargs
+                args=filtered_kwargs
             )
             )
 

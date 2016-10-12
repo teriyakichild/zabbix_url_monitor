@@ -3,6 +3,7 @@
 import logging
 
 import commons
+import json
 
 from zbxsend import Metric
 
