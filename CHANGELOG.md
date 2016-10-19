@@ -1,3 +1,35 @@
+## 3.0.0-1 (Oct 10 2016)
+
+Major Feature:
+
+  - Major change to add a new item that contains the overall health of a particular check. This will catch *any* failures or oddities by
+  the application and if this value is 1 you may alert (in addition to whichever triggers you wish to make for your items)  (#23, @jonkelleyatrackspace)
+  - changed final exit code to 2 for failed checks, 1 for program/network error, 0 for successful
+
+Cleanup:
+  - improved style
+  - code readability
+  - yaml file format examples
+
+## 2.2.0-1 (Oct 10 2016)
+
+Feature:
+
+  - Add feature to skip checks based on puppet facts, shell env, or custom command output (#23, @jonkelleyatrackspace)
+
+## 2.1.0-1 (Oct 10 2016)
+
+Feature:
+
+  - add pidfile for run locking (#23, @jonkelleyatrackspace)
+
+## 2.0.1-1 (Oct 10 2016)
+
+Cleanup:
+
+  - pep updates (#23, @jonkelleyatrackspace)
+  - code refactoring and cleanup (#23, @jonkelleyatrackspace)
+
 ## 2.0.0-1 (Sep 19 2016)
 
 Feature:
