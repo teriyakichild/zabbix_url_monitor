@@ -116,16 +116,6 @@ def main(arguments=None):
     # stage return code
     set_rc = 0
 
-    # establish single-run lockfile (pid)
-    try:
-        if inputflag.COMMAND == "check":
-            runlock = commons.AcquireRunLock(config['config']['pidfile'])
-    except PidlockConflict, err:
-        logging.error("Error: Could not acquire exclusive "
-                      "lock {0}".format(err))
-        print("1")
-        exit(1)
-
     # skip if skip conditions exist (for standby nodes)
     conditional_skip_queue = configinstance.skip_conditions
     if inputflag.COMMAND == "discover":
@@ -137,10 +127,18 @@ def main(arguments=None):
         for condition, condition_args in test.items():
             if commons.skip_on_external_condition(
                     logger, condition, condition_args):
-                runlock.release()
                 exit(0)
 
     if inputflag.COMMAND == "check":
+        # establish single-run lockfile (pid)
+        try:
+            runlock = commons.AcquireRunLock(config['config']['pidfile'])
+        except PidlockConflict, err:
+            logging.error("Error: Could not acquire exclusive "
+                          "lock {0}".format(err))
+            print("1")
+            exit(1)
+
         completed_runs = []
         for thisscheck in config['checks']:
             try:
@@ -201,7 +199,7 @@ def main(arguments=None):
         )]
 
         logger.debug("Summary: {0}".format(check_completion_status))
-        if not action.transmitfacade(config, check_completion_status):
+        if not action.transmitfacade(config, check_completion_status, logger=logger):
             logger.critical(
                 "Sending execution summary to zabbix server failed!")
             set_rc = 1

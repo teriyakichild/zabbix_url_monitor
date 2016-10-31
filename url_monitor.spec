@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           url_monitor
-Version:        3.0.0
+Version:        3.0.1
 Release:        1%{?dist}
 Group:          Applications/Systems
 Summary:        This is an external script for zabbix for monitoring restful endpoints for data.
@@ -21,6 +21,7 @@ Requires:       python-requests
 Requires:       python-requests-oauthlib
 Requires:       python-argparse
 Requires:       PyYAML
+Requires:       facterpy
 
 %define service_name %{name}d
 
@@ -53,6 +54,10 @@ mkdir -p %{buildroot}%{_localstatedir}/lib/%{name}
 %attr(0755,-,-) %{_bindir}/%{name}
 
 %changelog
+* Mon Oct 31 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 3.0.1-1
+- Update spec version
+- Add facterpy to requirements (built against facterpy-0.1-1)
+
 * Mon Oct 11 2016 Jonathan Kelley <jon.kelley@rackspace.com> - 3.0.0-1
 - Update spec version
 
