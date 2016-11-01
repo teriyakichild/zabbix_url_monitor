@@ -8,7 +8,7 @@ import json
 import requests
 from urlparse import urlparse
 
-from zbxsend import Metric
+import zbxsend
 
 __doc__ = """Action on backends after entry points are handled in main"""
 
@@ -47,7 +47,7 @@ def webfacade(testSet, configinstance, webcaller, config):
         return out
 
 
-def transmitfacade(configinstance, metrics):
+def transmitfacade(configinstance, metrics, logger):
     """
     Send a list of Metric objects to zabbix.
     Called by check()
@@ -82,13 +82,13 @@ def transmitfacade(configinstance, metrics):
     )
     logging.info(
         "{m} host {zbxhost}:{zbxport}".format(
-            m=msg, metrics=metrics, zbxhost=z_host, zbxport=z_port
+            m=msg, metrics=metrics, zbxhost=z_host, zbxport=z_port, logger=logger
         )
     )
 
     # Send metrics to zabbix
     try:
-        event.send_to_zabbix(
+        zbxsend.send_to_zabbix(
             metrics=metrics,
             zabbix_host=z_host,
             zabbix_port=z_port,
@@ -195,12 +195,12 @@ def check(testSet, configinstance, logger):
                 'item_key_format'].format(**check)
 
             zabbix_telemetry.append(
-                Metric(zabbix_metric_host, metrickey, check['api_response'])
+                zbxsend.Metric(zabbix_metric_host, metrickey, check['api_response'])
             )
 
     logger.info("Sending telemetry to zabbix server as Metrics objects")
     logger.debug("Telemetry: {0}".format(zabbix_telemetry))
-    if not transmitfacade(configinstance=config, metrics=zabbix_telemetry):
+    if not transmitfacade(configinstance=config, metrics=zabbix_telemetry, logger=logger):
         logger.critical("Sending telemetry to zabbix failed!")
 
     if report_bad_health:

@@ -499,8 +499,8 @@ class ConfigObject(baseConfig, configProperties):
             print("1")
             exit(1)
         if (debug_level.lower().startswith('err') or
-                    debug_level.lower().startswith('exc')
-                ):
+            debug_level.lower().startswith('exc')
+            ):
             return logging.ERROR
         elif debug_level.lower().startswith('crit'):
             return logging.CRITICAL
@@ -603,6 +603,15 @@ class ConfigObject(baseConfig, configProperties):
             try:
                 sysloghandler = logging.handlers.SysLogHandler(
                     address=sysloghost, socktype=socktype)
+            except TypeError:
+                # Py 2.6 doesnt support custom socktypes
+                self.logger.warning("Python 2.6 only supports TCP for syslog"
+                                    "handling, ignoring syslog socket settin"
+                                    "gs.")
+                sysloghandler = logging.handlers.SysLogHandler(
+                    address=sysloghost)
+
+            try:
                 sysloghandler.setLevel(loglevel)
                 self.logger.addHandler(sysloghandler)
                 sysloghandler.setFormatter(formatter)

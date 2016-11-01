@@ -1,3 +1,11 @@
+## 3.0.1-1 (Oct 31 2016)
+
+Fixes
+
+  - Fixed issue with the transmit function (related) to the major refactor
+  - Fixed a bug on Python 2.6 where logging.handlers.SysLogHandler doesn't support socktype
+
+
 ## 3.0.0-1 (Oct 10 2016)
 
 Major Feature:
