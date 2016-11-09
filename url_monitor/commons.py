@@ -105,12 +105,28 @@ class AcquireRunLock(object):
         """
         Create exclusive app lock
         """
-        if pidfile.startswith("/"):
+
+        # logic lock to ensure the disk format is always "x.pid"
+        # regardless of what the user inputs.
+        # supports both a Fully Qualified File Path as well as assumptive relative pathing
+        # (relying on zabbix server lock dir)
+        if pidfile.startswith("/"): # user defined explicit path
             piddir = os.path.dirname(pidfile)
-            pidpath = pidfile  # use explicit path
-        else:
-            piddir = "/var/lib/zabbixsrv/"
-            pidpath = "{dir}{file}".format(dir=piddir, file=pidfile)
+            if pidfile.endswith(".pid"):
+                # the user provided .pid extension
+                pidpath = ("{0}").format(pidfile)
+            else:
+                # detect/add .pid extension
+                pidpath = ("{0}.pid").format(pidfile)
+
+        else: # relative path, dump pid lock with zabbix i guess?
+            piddir = "/var/run/zabbixsrv"
+            if pidfile.endswith(".pid"):
+                # the user provided .pid extension
+                pidpath = "{dir}/{pidfname}".format(dir=piddir, pidfname=pidfile)
+            else:
+                # detect/add .pid extension
+                pidpath = "{dir}/{pidfname}.pid".format(dir=piddir, pidfname=pidfile)
 
         # Check lockdir exists
         if not os.path.exists(piddir):
