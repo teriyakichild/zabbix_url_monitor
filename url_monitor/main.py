@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-
+import lockfile
 import argparse
 import json
 import logging
@@ -22,6 +22,8 @@ from url_monitor import description as descriptionmacro
 from url_monitor import authors as emailsmacro
 from url_monitor import project as projectmacro
 
+
+
 __doc__ = """Program entry point / arg handling / check passfail review"""
 
 
@@ -39,7 +41,6 @@ def return_epilog():
         project=projectmacro,
         authors='\n'.join(author_strings)
     )
-
 
 def main(arguments=None):
     """
@@ -130,79 +131,83 @@ def main(arguments=None):
                 exit(0)
 
     if inputflag.COMMAND == "check":
-        # establish single-run lockfile (pid)
-        try:
-            runlock = commons.AcquireRunLock(config['config']['pidfile'])
-        except PidlockConflict, err:
-            logging.error("Error: Could not acquire exclusive "
-                          "lock {0}".format(err))
-            print("1")
+        lock = lockfile.FileLock(config['config']['pidfile'])
+        if lock.is_locked():
+            logger.critical(" Fail! Process already running with PID {0}. EXECUTION STOP.".format(lock.pid))
             exit(1)
+        else:
+            with lock:
+                logger.info("PID lock acquired {0} {1}".format(lock.path, lock.pid))
 
-        completed_runs = []
-        for thisscheck in config['checks']:
-            try:
-                if (inputflag.key != None and
-                        thisscheck['key'] == inputflag.key):
-                    # --key defined and name matched! only run 1 check
-                    rc, checkobj = action.check(
-                        thisscheck, configinstance, logger
-                    )
-                    completed_runs.append(
-                        (
-                            rc,
-                            thisscheck['key'],
-                            checkobj
-                        )
-                    )
-                elif not inputflag.key:
-                    # run all checks
-                    rc, checkobj = action.check(
-                        thisscheck, configinstance, logger
-                    )
-                    completed_runs.append(
-                        (
-                            rc,
-                            thisscheck['key'],
-                            checkobj
-                        )
-                    )
-            except Exception as e:
-                logger.exception(e)
+                # run check
+                completed_runs = [] # check results
+                for thisscheck in config['checks']:
+                    try:
+                        if (inputflag.key != None and
+                                thisscheck['key'] == inputflag.key):
+                            # --key defined and name matched! only run 1 check
+                            rc, checkobj = action.check(
+                                thisscheck, configinstance, logger
+                            )
+                            completed_runs.append(
+                                (
+                                    rc,
+                                    thisscheck['key'],
+                                    checkobj
+                                )
+                            )
+                        elif not inputflag.key:
+                            # run all checks
+                            rc, checkobj = action.check(
+                                thisscheck, configinstance, logger
+                            )
+                            completed_runs.append(
+                                (
+                                    rc,
+                                    thisscheck['key'],
+                                    checkobj
+                                )
+                            )
+                    except Exception as e:
+                        logger.exception(e)
 
-        for check in completed_runs:
-            rc, name, values = check
-            if rc == 0 and set_rc == 0:
-                set_rc = 0
-            else:
-                set_rc = 1
+                # set run status overall
+                for check in completed_runs:
+                    rc, name, values = check
+                    if rc == 0 and set_rc == 0:
+                        set_rc = 0
+                    else:
+                        set_rc = 1
 
-        badmsg = "with errors    [FAIL]"
-        if set_rc == 0:
-            badmsg = "without errors    [ OK ]"
-        logger.info("Checks have completed {0}".format(badmsg))
+                # report errors
+                badmsg = "with errors    [FAIL]"
+                if set_rc == 0:
+                    badmsg = "without errors    [ OK ]"
+                logger.info("Checks have completed {0}".format(badmsg))
 
-        # Report final conditions to zabbix (so informational alerting can
-        # be built around failed script runs, exceptions, network errors,
-        # timeouts, etc)
-        logger.info(
-            "Sending execution summary to zabbix server as Metrics objects"
-        )
+                # Report final conditions to zabbix (so informational alerting can
+                # be built around failed script runs, exceptions, network errors,
+                # timeouts, etc)
+                logger.info(
+                    "Sending execution summary to zabbix server as Metrics objects"
+                )
 
-        if not values:  # Do you see uncaught requests.exceptions?
-            values = {'EXECUTION_STATUS': 1}  # trigger an alert
+                if not values:  # Do you see uncaught requests.exceptions?
+                    values = {'EXECUTION_STATUS': 1}  # trigger an alert
 
-        metrickey = config['config']['zabbix']['checksummary_key_format']
+                metrickey = config['config']['zabbix']['checksummary_key_format']
 
-        check_completion_status = [Metric(
-            config['config']['zabbix']['host'], metrickey, set_rc
-        )]
+                check_completion_status = [Metric(
+                    config['config']['zabbix']['host'], metrickey, set_rc
+                )]
 
-        logger.debug("Summary: {0}".format(check_completion_status))
-        if not action.transmitfacade(config, check_completion_status, logger=logger):
-            logger.critical(
-                "Sending execution summary to zabbix server failed!")
-            set_rc = 1
+                logger.debug("Summary: {0}".format(check_completion_status))
+                if not action.transmitfacade(config, check_completion_status, logger=logger):
+                    logger.critical(
+                        "Sending execution summary to zabbix server failed!")
+                    set_rc = 1
+            if lock.is_locked():
+                lock.release()
 
     elif inputflag.COMMAND == "discover":
         action.discover(inputflag, configinstance, logger)
@@ -211,10 +216,7 @@ def main(arguments=None):
     # drop lockfile, then exit (if check mode is active)
     if inputflag.COMMAND == "check":
         print(set_rc)  # don't need print retcode in discover
-        if runlock.islocked():
-            runlock.release()
-            exit(set_rc)
-
+        exit(set_rc)
 
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""

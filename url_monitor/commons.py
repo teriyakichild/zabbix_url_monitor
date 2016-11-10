@@ -1,11 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
-try:
-    from daemon.pidlockfile import PIDLockFile
-except ImportError:
-    from daemon.pidfile import PIDLockFile
 from facter import Facter
 import requests
 from requests.auth import HTTPBasicAuth
@@ -15,7 +10,6 @@ import os.path
 from os import environ
 import subprocess
 
-from exception import PidlockConflict
 from jpath import jpath
 
 
@@ -94,77 +88,6 @@ def skip_on_external_condition(logging, condition, argv):
                          )
             return True
     return False
-
-
-class AcquireRunLock(object):
-    """
-    Establishes a lockfile to avoid duplicate runs for same config.
-    """
-
-    def __init__(self, pidfile):
-        """
-        Create exclusive app lock
-        """
-
-        # logic lock to ensure the disk format is always "x.pid"
-        # regardless of what the user inputs.
-        # supports both a Fully Qualified File Path as well as assumptive relative pathing
-        # (relying on zabbix server lock dir)
-        if pidfile.startswith("/"): # user defined explicit path
-            piddir = os.path.dirname(pidfile)
-            if pidfile.endswith(".pid"):
-                # the user provided .pid extension
-                pidpath = ("{0}").format(pidfile)
-            else:
-                # detect/add .pid extension
-                pidpath = ("{0}.pid").format(pidfile)
-
-        else: # relative path, dump pid lock with zabbix i guess?
-            piddir = "/var/run/zabbixsrv"
-            if pidfile.endswith(".pid"):
-                # the user provided .pid extension
-                pidpath = "{dir}/{pidfname}".format(dir=piddir, pidfname=pidfile)
-            else:
-                # detect/add .pid extension
-                pidpath = "{dir}/{pidfname}.pid".format(dir=piddir, pidfname=pidfile)
-
-        # Check lockdir exists
-        if not os.path.exists(piddir):
-            raise PidlockConflict("directory {0} is missing or insufficient permission".format(
-                piddir
-            )
-            )
-
-        # Check for orphaned pids
-        if os.path.isfile(pidpath):
-            with open(pidpath) as f:
-                conflictpid = f.read()
-            raise PidlockConflict("process {0} has lock in {1}".format(
-                conflictpid.strip(), pidpath
-            )
-            )
-
-        # Acquire lock
-        self.pidfile = PIDLockFile(pidpath)
-        self.locked = False
-        if not self.pidfile.is_locked():
-            self.pidfile.acquire()
-            self.locked = True
-
-    def release(self):
-        """
-        Releases exclusive lock
-        """
-        if self.pidfile.is_locked():
-            self.locked = False
-            return self.pidfile.release()
-
-    def islocked(self):
-        """
-        Return true if exclusively locked
-        """
-        return self.pidfile.is_locked()
-
 
 def get_hostport_tuple(dport, dhost):
     """
