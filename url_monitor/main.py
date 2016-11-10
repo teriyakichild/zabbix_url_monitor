@@ -23,7 +23,6 @@ from url_monitor import authors as emailsmacro
 from url_monitor import project as projectmacro
 
 
-
 __doc__ = """Program entry point / arg handling / check passfail review"""
 
 
@@ -41,6 +40,7 @@ def return_epilog():
         project=projectmacro,
         authors='\n'.join(author_strings)
     )
+
 
 def main(arguments=None):
     """
@@ -134,39 +134,47 @@ def main(arguments=None):
         try:
             lock = lockfile.FileLock(config['config']['pidfile'])
         except lockfile.NotLocked as e:
-            logger.error("lockfile exception: the lock is not locked when release() was called? {0}".format(e))
+            logger.error(
+                "lockfile exception: the lock is not locked when release() was called? {0}".format(e))
             echo("1")
             exit(1)
         except lockfile.UnlockError as e:
-            logger.error("lockfile exception: an error was encountered while trying to unlock the lock file {0}".format(e))
+            logger.error(
+                "lockfile exception: an error was encountered while trying to unlock the lock file {0}".format(e))
             echo("1")
             exit(1)
         except lockfile.AlreadyLocked as e:
-            logger.error("lockfile exception: lock already acquired {0}".format(e))
+            logger.error(
+                "lockfile exception: lock already acquired {0}".format(e))
             echo("1")
             exit(1)
         except lockfile.NotLocked as e:
-            logger.error("lockfile exception: the lock is was locked when release() was called {0}".format(e))
+            logger.error(
+                "lockfile exception: the lock is was locked when release() was called {0}".format(e))
             echo("1")
             exit(1)
         except lockfile.NotMyLock as e:
-            logger.error("lockfile exception: a lock already exists, but appears to be owned by another process! {0}".format(e))
+            logger.error(
+                "lockfile exception: a lock already exists, but appears to be owned by another process! {0}".format(e))
             echo("1")
             exit(1)
         except Exception as e:
-            logger.error("lockfile exception: a general exception occured while acquiring lcokfile.FileLock {0}".format(e))
+            logger.error(
+                "lockfile exception: a general exception occured while acquiring lcokfile.FileLock {0}".format(e))
             echo("1")
             exit(1)
 
         if lock.is_locked():
-            logger.critical(" Fail! Process already running with PID {0}. EXECUTION STOP.".format(lock.pid))
+            logger.critical(
+                " Fail! Process already running with PID {0}. EXECUTION STOP.".format(lock.pid))
             exit(1)
         else:
             with lock:
-                logger.info("PID lock acquired {0} {1}".format(lock.path, lock.pid))
+                logger.info(
+                    "PID lock acquired {0} {1}".format(lock.path, lock.pid))
 
                 # run check
-                completed_runs = [] # check results
+                completed_runs = []  # check results
                 for checkitem in config['checks']:
                     try:
                         if (inputflag.key is not None and
@@ -221,7 +229,8 @@ def main(arguments=None):
                 if not values:  # Do you see uncaught requests.exceptions?
                     values = {'EXECUTION_STATUS': 1}  # trigger an alert
 
-                metrickey = config['config']['zabbix']['checksummary_key_format']
+                metrickey = config['config'][
+                    'zabbix']['checksummary_key_format']
 
                 check_completion_status = [Metric(
                     config['config']['zabbix']['host'], metrickey, set_rc
@@ -243,6 +252,7 @@ def main(arguments=None):
     if inputflag.COMMAND == "check":
         print(set_rc)  # don't need print retcode in discover
         exit(set_rc)
+
 
 def entry_point():
     """Zero-argument entry point for use with setuptools/distribute."""
