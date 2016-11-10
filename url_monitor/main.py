@@ -167,30 +167,30 @@ def main(arguments=None):
 
                 # run check
                 completed_runs = [] # check results
-                for thisscheck in config['checks']:
+                for checkitem in config['checks']:
                     try:
                         if (inputflag.key is not None and
-                                thisscheck['key'] == inputflag.key):
+                                checkitem['key'] == inputflag.key):
                             # --key defined and name matched! only run 1 check
                             rc, checkobj = action.check(
-                                thisscheck, configinstance, logger
+                                checkitem, configinstance, logger
                             )
                             completed_runs.append(
                                 (
                                     rc,
-                                    thisscheck['key'],
+                                    checkitem['key'],
                                     checkobj
                                 )
                             )
                         elif not inputflag.key:
                             # run all checks
                             rc, checkobj = action.check(
-                                thisscheck, configinstance, logger
+                                checkitem, configinstance, logger
                             )
                             completed_runs.append(
                                 (
                                     rc,
-                                    thisscheck['key'],
+                                    checkitem['key'],
                                     checkobj
                                 )
                             )
