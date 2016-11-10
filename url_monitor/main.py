@@ -131,7 +131,33 @@ def main(arguments=None):
                 exit(0)
 
     if inputflag.COMMAND == "check":
-        lock = lockfile.FileLock(config['config']['pidfile'])
+        try:
+            lock = lockfile.FileLock(config['config']['pidfile'])
+        except lockfile.NotLocked as e:
+            logger.error("lockfile exception: the lock is not locked when release() was called? {0}".format(e))
+            echo("1")
+            exit(1)
+        except lockfile.UnlockError as e:
+            logger.error("lockfile exception: an error was encountered while trying to unlock the lock file {0}".format(e))
+            echo("1")
+            exit(1)
+        except lockfile.AlreadyLocked as e:
+            logger.error("lockfile exception: lock already acquired {0}".format(e))
+            echo("1")
+            exit(1)
+        except lockfile.NotLocked as e:
+            logger.error("lockfile exception: the lock is was locked when release() was called {0}".format(e))
+            echo("1")
+            exit(1)
+        except lockfile.NotMyLock as e:
+            logger.error("lockfile exception: a lock already exists, but appears to be owned by another process! {0}".format(e))
+            echo("1")
+            exit(1)
+        except Exception as e:
+            logger.error("lockfile exception: a general exception occured while acquiring lcokfile.FileLock {0}".format(e))
+            echo("1")
+            exit(1)
+
         if lock.is_locked():
             logger.critical(" Fail! Process already running with PID {0}. EXECUTION STOP.".format(lock.pid))
             exit(1)
@@ -143,7 +169,7 @@ def main(arguments=None):
                 completed_runs = [] # check results
                 for thisscheck in config['checks']:
                     try:
-                        if (inputflag.key != None and
+                        if (inputflag.key is not None and
                                 thisscheck['key'] == inputflag.key):
                             # --key defined and name matched! only run 1 check
                             rc, checkobj = action.check(
