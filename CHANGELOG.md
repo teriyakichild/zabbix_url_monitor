@@ -1,14 +1,12 @@
-## 3.0.3-1 (Nov 10 2016)
-
-Fixes
-
-  - Implement proper lockfile handling
-
-## 3.0.2-1 (Nov 9 2016)
+## 3.0.2-1 (Nov 10 2016)
 
 Improvements
 
   - Improve pidfile name resolution/path resolution handling.
+
+Fixes
+
+  - Implement proper lockfile handling
 
 ## 3.0.1-1 (Oct 31 2016)
 
