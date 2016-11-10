@@ -133,35 +133,13 @@ def main(arguments=None):
     if inputflag.COMMAND == "check":
         try:
             lock = lockfile.FileLock(config['config']['pidfile'])
-        except lockfile.NotLocked as e:
-            logger.error(
-                "lockfile exception: the lock is not locked when release() was called? {0}".format(e))
-            echo("1")
-            exit(1)
-        except lockfile.UnlockError as e:
-            logger.error(
-                "lockfile exception: an error was encountered while trying to unlock the lock file {0}".format(e))
-            echo("1")
-            exit(1)
-        except lockfile.AlreadyLocked as e:
-            logger.error(
-                "lockfile exception: lock already acquired {0}".format(e))
-            echo("1")
-            exit(1)
-        except lockfile.NotLocked as e:
-            logger.error(
-                "lockfile exception: the lock is was locked when release() was called {0}".format(e))
-            echo("1")
-            exit(1)
         except lockfile.NotMyLock as e:
             logger.error(
-                "lockfile exception: a lock already exists, but appears to be owned by another process! {0}".format(e))
-            echo("1")
+                "lockfile exception: it appears this is not my lockfile {0}".format(e))
             exit(1)
         except Exception as e:
-            logger.error(
-                "lockfile exception: a general exception occured while acquiring lcokfile.FileLock {0}".format(e))
-            echo("1")
+            logger.error("lockfile exception: a general exception occured while acquiring "
+                "lockfile.FileLock {0}".format(e))
             exit(1)
 
         if lock.is_locked():
@@ -169,7 +147,7 @@ def main(arguments=None):
                 " Fail! Process already running with PID {0}. EXECUTION STOP.".format(lock.pid))
             exit(1)
         else:
-            with lock:
+            with lock: # context will .release() automatically
                 logger.info(
                     "PID lock acquired {0} {1}".format(lock.path, lock.pid))
 
@@ -241,10 +219,6 @@ def main(arguments=None):
                     logger.critical(
                         "Sending execution summary to zabbix server failed!")
                     set_rc = 1
-            if lock.is_locked():
-                lock.release()
-
-    elif inputflag.COMMAND == "discover":
         action.discover(inputflag, configinstance, logger)
         set_rc = 0
 
