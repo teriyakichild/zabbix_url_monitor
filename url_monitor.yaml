@@ -38,7 +38,7 @@ config:
     host: "zabbix-host.localdomain"
     server: "localhost:10051"
     send_timeout: 15
-    item_key_format: "url_monitor[{datatype}, {metricname}, {uri}]"
+    item_key_format: "url_monitor[{datatype}, {metricname}, {uri}, {threshold_operator}]"
     checksummary_key_format: "url_monitor[EXECUTION_STATUS]"
 testSet:
   "jobStatsTotals":
@@ -50,11 +50,20 @@ testSet:
     testElements:
       - key: "Job.success"
         jsonvalue: "./jobSuccess"
-        datatype: "counter,string"
+        datatype: "integer"
         metricname: "jobSuccess"
         unit_of_measure: "events"
+        threshold: 10
+        threshold_operator: "less_than"
       - key: "Job.failure"
         jsonvalue: "./jobFailure"
-        datatype: "counter"
+        datatype: "integer"
         metricname: "jobFailure"
+        unit_of_measure: "events"
+        threshold: 10
+        threshold_operator: "greater_than"
+      - key: "Job.nothing"
+        jsonvalue: "./jobNothing"
+        datatype: "integer"
+        metricname: "jobNothing"
         unit_of_measure: "events"
