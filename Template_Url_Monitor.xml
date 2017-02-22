@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>2.0</version>
-    <date>2016-09-20T17:38:34Z</date>
+    <date>2017-01-25T01:00:00Z</date>
     <groups>
         <group>
             <name>Templates</name>
+        </group>
+        <group>
+            <name>url monitor</name>
         </group>
     </groups>
     <templates>
@@ -14,6 +17,9 @@
             <groups>
                 <group>
                     <name>Templates</name>
+                </group>
+                <group>
+                    <name>url monitor</name>
                 </group>
             </groups>
             <applications/>
@@ -60,12 +66,12 @@
             </items>
             <discovery_rules>
                 <discovery_rule>
-                    <name>Counter</name>
+                    <name>Counter - equal_to</name>
                     <type>10</type>
                     <snmp_community/>
                     <snmp_oid/>
-                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter]</key>
-                    <delay>3600</delay>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter, -o, equal_to]</key>
+                    <delay>30</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -84,9 +90,9 @@
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <filter>:</filter>
+                    <filter>{#THRESHOLD_OPERATOR}:^less_than$</filter>
                     <lifetime>1</lifetime>
-                    <description/>
+                    <description>This creates the items and triggers for items with the &quot;counter&quot; type and &quot;equal_to&quot; threshold operator.</description>
                     <item_prototypes>
                         <item_prototype>
                             <name>{#CHECKNAME} - {#METRICNAME} - counter</name>
@@ -94,7 +100,7 @@
                             <snmp_community/>
                             <multiplier>0</multiplier>
                             <snmp_oid/>
-                            <key>url_monitor[counter, {#METRICNAME}, {#RESOURCE_URI}]</key>
+                            <key>url_monitor[counter, {#METRICNAME}, {#RESOURCE_URI}, equal_to]</key>
                             <delay>0</delay>
                             <history>90</history>
                             <trends>365</trends>
@@ -133,12 +139,12 @@
                     <host_prototypes/>
                 </discovery_rule>
                 <discovery_rule>
-                    <name>Integer</name>
+                    <name>Counter - greater_than</name>
                     <type>10</type>
                     <snmp_community/>
                     <snmp_oid/>
-                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, integer]</key>
-                    <delay>3600</delay>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter, -o, greater_than]</key>
+                    <delay>30</delay>
                     <status>0</status>
                     <allowed_hosts/>
                     <snmpv3_contextname/>
@@ -157,7 +163,392 @@
                     <publickey/>
                     <privatekey/>
                     <port/>
-                    <filter>:</filter>
+                    <filter>{#THRESHOLD_OPERATOR}:^greater_than$</filter>
+                    <lifetime>1</lifetime>
+                    <description>This creates the items and triggers for items with the &quot;counter&quot; type and &quot;greater_than&quot; threshold operator.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#CHECKNAME} - {#METRICNAME} - counter</name>
+                            <type>2</type>
+                            <snmp_community/>
+                            <multiplier>0</multiplier>
+                            <snmp_oid/>
+                            <key>url_monitor[counter, {#METRICNAME}, {#RESOURCE_URI}, greater_than]</key>
+                            <delay>0</delay>
+                            <history>90</history>
+                            <trends>365</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <delta>1</delta>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <formula>1</formula>
+                            <delay_flex/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <data_type>0</data_type>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications/>
+                            <valuemap/>
+                            <logtimefmt/>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes/>
+                    <graph_prototypes/>
+                    <host_prototypes/>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Counter - less_than</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter, -o, less_than]</key>
+                    <delay>30</delay>
+                    <status>0</status>
+                    <allowed_hosts/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <filter>{#THRESHOLD_OPERATOR}:^less_than$</filter>
+                    <lifetime>1</lifetime>
+                    <description>This creates the items and triggers for items with the &quot;counter&quot; type and &quot;less_than&quot; threshold operator.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#CHECKNAME} - {#METRICNAME} - counter</name>
+                            <type>2</type>
+                            <snmp_community/>
+                            <multiplier>0</multiplier>
+                            <snmp_oid/>
+                            <key>url_monitor[counter, {#METRICNAME}, {#RESOURCE_URI}, less_than]</key>
+                            <delay>0</delay>
+                            <history>90</history>
+                            <trends>365</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <delta>2</delta>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <formula>1</formula>
+                            <delay_flex/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <data_type>0</data_type>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications/>
+                            <valuemap/>
+                            <logtimefmt/>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes/>
+                    <graph_prototypes/>
+                    <host_prototypes/>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Counter - no_trigger</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, counter]</key>
+                    <delay>30</delay>
+                    <status>0</status>
+                    <allowed_hosts/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <filter>{#THRESHOLD_OPERATOR}:^$|^no_trigger$</filter>
+                    <lifetime>1</lifetime>
+                    <description>This creates items with the &quot;counter&quot; type and &quot;no_trigger&quot; threshold operator or none at all.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#CHECKNAME} - {#METRICNAME} - counter</name>
+                            <type>2</type>
+                            <snmp_community/>
+                            <multiplier>0</multiplier>
+                            <snmp_oid/>
+                            <key>url_monitor[counter, {#METRICNAME}, {#RESOURCE_URI}, no_trigger]</key>
+                            <delay>0</delay>
+                            <history>90</history>
+                            <trends>365</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <delta>2</delta>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <formula>1</formula>
+                            <delay_flex/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <data_type>0</data_type>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications/>
+                            <valuemap/>
+                            <logtimefmt/>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes/>
+                    <graph_prototypes/>
+                    <host_prototypes/>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Integer - greater_than</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, integer, -o, greater_than]</key>
+                    <delay>30</delay>
+                    <status>0</status>
+                    <allowed_hosts/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <filter>{#THRESHOLD_OPERATOR}:^greater_than$</filter>
+                    <lifetime>1</lifetime>
+                    <description/>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#CHECKNAME} - {#METRICNAME} - integer</name>
+                            <type>2</type>
+                            <snmp_community/>
+                            <multiplier>0</multiplier>
+                            <snmp_oid/>
+                            <key>url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}, greater_than]</key>
+                            <delay>0</delay>
+                            <history>90</history>
+                            <trends>365</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <delta>0</delta>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <formula>1</formula>
+                            <delay_flex/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <data_type>0</data_type>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications/>
+                            <valuemap/>
+                            <logtimefmt/>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>{Template Url Monitor:url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}, greater_than].last()}&gt;{#THRESHOLD}</expression>
+                            <name>{#CHECKNAME} - {#METRICNAME} {#THRESHOLD_OPERATOR} {#THRESHOLD}</name>
+                            <url>{#RUNBOOK}</url>
+                            <status>0</status>
+                            <priority>4</priority>
+                            <description/>
+                            <type>0</type>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <graph_prototypes/>
+                    <host_prototypes/>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Integer - less_than</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, integer, -o, less_than]</key>
+                    <delay>30</delay>
+                    <status>0</status>
+                    <allowed_hosts/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <filter>{#THRESHOLD_OPERATOR}:^less_than$</filter>
+                    <lifetime>1</lifetime>
+                    <description/>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#CHECKNAME} - {#METRICNAME} - integer</name>
+                            <type>2</type>
+                            <snmp_community/>
+                            <multiplier>0</multiplier>
+                            <snmp_oid/>
+                            <key>url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}, less_than]</key>
+                            <delay>0</delay>
+                            <history>90</history>
+                            <trends>365</trends>
+                            <status>0</status>
+                            <value_type>3</value_type>
+                            <allowed_hosts/>
+                            <units/>
+                            <delta>0</delta>
+                            <snmpv3_contextname/>
+                            <snmpv3_securityname/>
+                            <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                            <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                            <snmpv3_authpassphrase/>
+                            <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                            <snmpv3_privpassphrase/>
+                            <formula>1</formula>
+                            <delay_flex/>
+                            <params/>
+                            <ipmi_sensor/>
+                            <data_type>0</data_type>
+                            <authtype>0</authtype>
+                            <username/>
+                            <password/>
+                            <publickey/>
+                            <privatekey/>
+                            <port/>
+                            <description/>
+                            <inventory_link>0</inventory_link>
+                            <applications/>
+                            <valuemap/>
+                            <logtimefmt/>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>{Template Url Monitor:url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}, less_than].last()}&lt;{#THRESHOLD}</expression>
+                            <name>{#CHECKNAME} - {#METRICNAME} {#THRESHOLD_OPERATOR} {#THRESHOLD}</name>
+                            <url>{#RUNBOOK}</url>
+                            <status>0</status>
+                            <priority>4</priority>
+                            <description/>
+                            <type>0</type>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <graph_prototypes/>
+                    <host_prototypes/>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Integer - no_trigger</name>
+                    <type>10</type>
+                    <snmp_community/>
+                    <snmp_oid/>
+                    <key>url_monitor[discover, -c, {$URL_MONITOR_CONFIG}, -t, integer]</key>
+                    <delay>30</delay>
+                    <status>0</status>
+                    <allowed_hosts/>
+                    <snmpv3_contextname/>
+                    <snmpv3_securityname/>
+                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
+                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
+                    <snmpv3_authpassphrase/>
+                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
+                    <snmpv3_privpassphrase/>
+                    <delay_flex/>
+                    <params/>
+                    <ipmi_sensor/>
+                    <authtype>0</authtype>
+                    <username/>
+                    <password/>
+                    <publickey/>
+                    <privatekey/>
+                    <port/>
+                    <filter>{#THRESHOLD_OPERATOR}:^$|^no_trigger$</filter>
                     <lifetime>1</lifetime>
                     <description>This will discovery the list of resources that should be created as integers stored &quot;as is&quot;.</description>
                     <item_prototypes>
@@ -167,7 +558,7 @@
                             <snmp_community/>
                             <multiplier>0</multiplier>
                             <snmp_oid/>
-                            <key>url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}]</key>
+                            <key>url_monitor[integer, {#METRICNAME}, {#RESOURCE_URI}, no_trigger]</key>
                             <delay>0</delay>
                             <history>90</history>
                             <trends>365</trends>

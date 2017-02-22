@@ -160,6 +160,10 @@ def check(testSet, configinstance, logger):
             check['request_statuscode'] = response.status_code
             check['uri'] = testset['data']['uri']
 
+            # set default threshold_operator key in check dict
+            if not check.get('threshold_operator', False):
+                check['threshold_operator'] = 'no_trigger'
+
             # Determines the host of the uri
 
             try:
@@ -253,6 +257,8 @@ def discover(args, configinstance, logger):
                         {'checkname': checkname,
                          'resource_uri': uri}
                     )
+                    if not discoveryitem.get('threshold_operator', False):
+                        discoveryitem['threshold_operator'] = 'no_trigger'
 
                     # Apply Zabbix low level discovery formating to key names
                     #  (shift to uppercase)

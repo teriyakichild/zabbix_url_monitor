@@ -104,6 +104,12 @@ def main(arguments=None):
         help="Specify custom loglevel override. Available options [debug,"
         " info, wrna, critical, error, exceptions]"
     )
+    arg_parser.add_argument(
+        "--thresholdoperator",
+        "-o",
+        default=None,
+        help="Only used by zabbix low level discovery to create unique item keys"
+    )
 
     inputflag = arg_parser.parse_args(args=arguments)
 
