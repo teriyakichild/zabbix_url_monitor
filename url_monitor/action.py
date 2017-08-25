@@ -151,6 +151,17 @@ def check(testSet, configinstance, logger):
                 logging.error("Uncaught unknown error")
                 return (1, check)
 
+            # Transform metrics according to transform_keys list
+            if testSet['data'].get('transform_keys', None) is not None:
+                for transform in testSet['data']['transform_keys']:
+                    if api_res_value == transform['from']:
+                        logging.debug("Transformming metric {} to {}".format(
+                            api_res_value,
+                            transform['to']
+                        ))
+                        api_res_value = transform['to']
+                        break
+
             # Append to the check things like response, statuscode, and
             # the request url, I'd like to monitor status codes but don't
             # know what that'll take.

@@ -281,6 +281,11 @@ PRO TIP: If you want to use the same identity provider, you can call it multiple
         response_type: json
         identity_provider: basicProvider
         ok_http_code: 200
+        transform_keys:
+          - from: SUCCESS
+            to: 1
+          - from: ERROR
+            to: 0
         testElements:
           - key: jdbc.pgsql
             jsonvalue: ./psqlstatus
@@ -310,8 +315,10 @@ PRO TIP: If you want to use the same identity provider, you can call it multiple
 > **`response_type`** is always `json` until we add a different module for xml.
 >
 > **`request_verify_ssl`** can be either true/false or a path to a valid SSL cert trust file for validating certificates on checks. This will override the global setting (if present).
+>
+> **`transform_keys`** is a list of dictionaries containing a mapping for string transformations.  If the result from the api matches one of the mappings, the corresponding value will be sent to zabbix instead of the original value.  This is required if using the threshold functionality with string values returned by an api because of a limitation of LLD in zabbix (string based macros are not usable in trigger expressions).
 
-#####Test Elements
+##### Test Elements
 
 Test elements are where the actual API response is parsed and check data is formulated.
 
