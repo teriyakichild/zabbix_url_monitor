@@ -208,8 +208,9 @@ def main(arguments=None):
             logger.info(
                 "Sending execution summary to zabbix server as Metrics objects"
             )
-
-            if not values:  # Do you see uncaught requests.exceptions?
+            try:
+                values
+            except NameError:
                 values = {'EXECUTION_STATUS': 1}  # trigger an alert
 
             metrickey = config['config'][
