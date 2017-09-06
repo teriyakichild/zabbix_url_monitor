@@ -155,7 +155,7 @@ def check(testSet, configinstance, logger):
             if testSet['data'].get('transform_keys', None) is not None:
                 for transform in testSet['data']['transform_keys']:
                     if api_res_value == transform['from']:
-                        logging.debug("Transformming metric {} to {}".format(
+                        logging.debug("Transformming metric {0} to {1}".format(
                             api_res_value,
                             transform['to']
                         ))
